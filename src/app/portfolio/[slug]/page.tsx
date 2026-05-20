@@ -6,23 +6,25 @@ import type { Project, ProjectCategory } from '@/types';
 import CoverSlider from './CoverSlider';
 import styles from './page.module.css';
 
-/* ── Tool icon config ─────────────────────────────────────── */
-const TOOL_MAP: Record<string, { label: string; bg: string; color: string }> = {
-  photoshop:    { label: 'Ps', bg: '#001e36', color: '#31A8FF' },
-  illustrator:  { label: 'Ai', bg: '#1a0a00', color: '#FF9A00' },
-  figma:        { label: 'Fg', bg: '#1a0010', color: '#A259FF' },
-  after_effects:{ label: 'Ae', bg: '#00001a', color: '#9999FF' },
-  premiere_pro: { label: 'Pr', bg: '#1a001a', color: '#EA77FF' },
-  lightroom:    { label: 'Lr', bg: '#001a36', color: '#4FBFFF' },
-  indesign:     { label: 'Id', bg: '#1a0020', color: '#FF3366' },
-  xd:           { label: 'Xd', bg: '#1a0020', color: '#FF61F6' },
-  blender:      { label: 'Bd', bg: '#0d0d00', color: '#E87D0D' },
-  cinema4d:     { label: 'C4', bg: '#001020', color: '#2087CF' },
+/* ── Tool icon config — monochrome palette ────────────────── */
+const TOOL_LABELS: Record<string, string> = {
+  photoshop:    'Ps',
+  illustrator:  'Ai',
+  figma:        'Fg',
+  after_effects:'Ae',
+  premiere_pro: 'Pr',
+  lightroom:    'Lr',
+  indesign:     'Id',
+  xd:           'Xd',
+  blender:      'Bd',
+  cinema4d:     'C4',
 };
 
 function getToolConfig(tool: string) {
   const key = tool.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
-  return TOOL_MAP[key] ?? { label: tool.slice(0, 2).toUpperCase(), bg: '#1a1a1a', color: '#878787' };
+  const label = TOOL_LABELS[key] ?? tool.slice(0, 2).toUpperCase();
+  // All monochrome — gray on dark
+  return { label, bg: '#1c1c1c', color: '#787878' };
 }
 
 /* ── Category label map ───────────────────────────────────── */
@@ -225,6 +227,32 @@ export default async function ProjectPage({
           </div>
         </section>
       )}
+
+      {/* ── Contact CTA — only on project detail (DM / Email) ── */}
+      <section className={styles.contactCta}>
+        <div className={styles.ctaInner}>
+          <div className={styles.ctaText}>
+            <h3>LET&apos;S WORK TOGETHER</h3>
+            <p>Have a project in mind? Let&apos;s talk.</p>
+          </div>
+          <div className={styles.ctaActions}>
+            <a
+              href="https://instagram.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.ctaBtnDm}
+            >
+              DM
+            </a>
+            <a
+              href="mailto:hello@rizqaputra.com"
+              className={styles.ctaBtnEmail}
+            >
+              EMAIL
+            </a>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }

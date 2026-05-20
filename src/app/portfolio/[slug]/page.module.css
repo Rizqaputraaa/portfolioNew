@@ -382,6 +382,87 @@
   color: var(--white);
 }
 
+/* ── Contact CTA (DM / Email) — project detail only ── */
+.contactCta {
+  background: var(--bg-2);
+  border-top: 1px solid var(--gray-light);
+  padding: 52px 40px;
+}
+
+.ctaInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.ctaText h3 {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.ctaText p {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.ctaActions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ctaBtnDm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 36px;
+  background: transparent;
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--gray-light);
+  border-radius: 8px;
+  transition: border-color 0.2s;
+}
+
+.ctaBtnDm:hover { border-color: var(--white); }
+
+.ctaBtnEmail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 13px 36px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.2s;
+}
+
+.ctaBtnEmail:hover { background: var(--orange-hover); }
+
+@media (max-width: 768px) {
+  .contactCta { padding: 40px 20px; }
+  .ctaInner { flex-direction: column; align-items: flex-start; }
+  .ctaActions { width: 100%; }
+  .ctaBtnDm, .ctaBtnEmail { flex: 1; }
+}
+
 /* ════════════════════════════════════════
    RESPONSIVE
 ════════════════════════════════════════ */

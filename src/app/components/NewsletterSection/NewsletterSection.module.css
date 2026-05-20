@@ -30,60 +30,50 @@
   font-weight: 400;
 }
 
-.actions {
+.form {
   display: flex;
-  gap: 12px;
   flex-shrink: 0;
+  gap: 0;
 }
 
-/* DM — outlined style */
-.btnDm {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 36px;
+.input {
+  padding: 13px 20px;
   background: transparent;
-  color: var(--white);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
   border: 1px solid var(--gray-light);
-  border-radius: 8px;
-  transition: border-color 0.2s, color 0.2s;
-  white-space: nowrap;
-}
-
-.btnDm:hover {
-  border-color: var(--white);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
   color: var(--white);
+  font-family: var(--font-sub);
+  font-size: 13px;
+  width: 240px;
+  outline: none;
+  transition: border-color 0.2s;
 }
 
-/* EMAIL — filled orange style */
-.btnEmail {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 13px 36px;
+.input::placeholder { color: var(--gray); }
+.input:focus { border-color: var(--gray); }
+
+.btn {
+  padding: 13px 22px;
   background: var(--orange);
   color: var(--white);
   font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
   border: none;
-  border-radius: 8px;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
   transition: background 0.2s;
   white-space: nowrap;
 }
 
-.btnEmail:hover {
-  background: var(--orange-hover);
-}
+.btn:hover { background: var(--orange-hover); }
 
 @media (max-width: 768px) {
   .section { padding: 40px 20px; }
   .inner { flex-direction: column; align-items: flex-start; }
-  .actions { width: 100%; }
-  .btnDm, .btnEmail { flex: 1; }
+  .form { flex-direction: column; gap: 10px; width: 100%; }
+  .input { width: 100%; border-right: 1px solid var(--gray-light); border-radius: 8px; }
+  .btn { border-radius: 8px; }
 }
