@@ -1,0 +1,48 @@
+.section {
+  padding: 30px 0;
+  overflow: hidden;
+  border-top: 1px solid var(--gray-light);
+  border-bottom: 1px solid var(--gray-light);
+  background: var(--bg);
+}
+
+.row {
+  display: flex;
+  overflow: hidden;
+  margin: 4px 0;
+}
+
+.track {
+  display: flex;
+  animation: scrollLeft 20s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+.trackReverse {
+  animation-direction: reverse;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: clamp(30px, 4vw, 50px);
+  font-weight: 900;
+  color: var(--white);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  padding: 0 32px;
+  flex-shrink: 0;
+}
+
+.star {
+  color: var(--orange);
+  font-size: 0.65em;
+  line-height: 1;
+}
+
+@keyframes scrollLeft {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}

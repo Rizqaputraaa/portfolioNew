@@ -1,0 +1,224 @@
+/* ═══════════════════════════════════════════
+   NAVBAR — base
+═══════════════════════════════════════════ */
+.navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  padding: 0 40px;
+  background: rgba(12, 12, 12, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.3s;
+}
+
+.container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+/* ── Logo ── */
+.logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.logoImg {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  /* Force pure white regardless of original logo colour */
+  filter: brightness(0) invert(1);
+}
+
+/* ── Desktop nav links ── */
+.navLinks {
+  display: flex;
+  gap: 48px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.navLinks a {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  color: var(--gray);
+  transition: color 0.2s;
+  text-transform: uppercase;
+}
+
+.navLinks a:hover,
+.navLinks a.active {
+  color: var(--white);
+}
+
+/* ── Right section (social + burger) ── */
+.right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.socialIcon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--gray);
+  transition: color 0.2s, transform 0.15s;
+  border-radius: 6px;
+}
+
+.socialIcon:hover {
+  color: var(--white);
+  transform: translateY(-2px);
+}
+
+/* ═══════════════════════════════════════════
+   BURGER BUTTON (hidden on desktop)
+═══════════════════════════════════════════ */
+.burger {
+  display: none;            /* hidden on desktop */
+  flex-direction: column;
+  justify-content: center;
+  gap: 6px;
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.burgerLine {
+  display: block;
+  width: 22px;
+  height: 2px;
+  background: var(--white);
+  border-radius: 2px;
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  transform-origin: center;
+}
+
+/* Animate to × when open */
+.burgerOpen .burgerLine:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+.burgerOpen .burgerLine:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.burgerOpen .burgerLine:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+
+/* ═══════════════════════════════════════════
+   MOBILE FULL-SCREEN MENU
+═══════════════════════════════════════════ */
+.mobileMenu {
+  position: fixed;
+  inset: 0;
+  top: 64px;               /* starts below navbar */
+  z-index: 99;
+  background: rgba(10, 10, 10, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+
+  /* Hidden by default */
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-16px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.mobileMenuOpen {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+.mobileLinks {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.mobileLinks li a {
+  display: block;
+  font-size: clamp(32px, 10vw, 48px);
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.35);
+  padding: 12px 24px;
+  transition: color 0.2s;
+  line-height: 1.1;
+}
+
+.mobileLinks li a:hover,
+.mobileLinks li a.mobileActive {
+  color: var(--white);
+}
+
+/* Social row inside mobile menu */
+.mobileSocial {
+  display: flex;
+  gap: 20px;
+  margin-top: 48px;
+}
+
+.mobileSocial a {
+  color: rgba(255, 255, 255, 0.4);
+  transition: color 0.2s;
+}
+
+.mobileSocial a:hover {
+  color: var(--white);
+}
+
+/* ═══════════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .navbar {
+    padding: 0 20px;
+  }
+
+  /* Hide desktop links + social on mobile */
+  .navLinks {
+    display: none;
+  }
+
+  .social {
+    display: none;
+  }
+
+  /* Show burger */
+  .burger {
+    display: flex;
+  }
+}

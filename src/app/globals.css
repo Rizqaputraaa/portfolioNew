@@ -1,42 +1,106 @@
+/* =============================================
+   FONTS — MADE Outer Sans + Afacad Flux
+   ============================================= */
+@font-face {
+  font-family: 'AfacadFlux';
+  src: url('/fonts/AfacadFlux.woff2') format('woff2'),
+       url('/fonts/AfacadFlux.ttf') format('truetype');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MadeOuterSans';
+  src: url('/fonts/MadeOuterSans-Thin.otf') format('opentype');
+  font-weight: 100;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MadeOuterSans';
+  src: url('/fonts/MadeOuterSans-Light.otf') format('opentype');
+  font-weight: 300;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MadeOuterSans';
+  src: url('/fonts/MadeOuterSans-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MadeOuterSans';
+  src: url('/fonts/MadeOuterSans-Medium.otf') format('opentype');
+  font-weight: 500;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MadeOuterSans';
+  src: url('/fonts/MadeOuterSans-Bold.otf') format('opentype');
+  font-weight: 700;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'MadeOuterSans';
+  src: url('/fonts/MadeOuterSans-Black.otf') format('opentype');
+  font-weight: 900;
+  font-display: swap;
+}
+
+/* =============================================
+   CSS VARIABLES
+   ============================================= */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg:          #0C0C0C;
+  --bg-2:        #141414;
+  --bg-3:        #1a1a1a;
+  --white:       #F4F4F4;
+  --gray:        #878787;
+  --gray-light:  #2a2a2a;
+  --orange:      #D5631A;
+  --orange-hover:#e8712a;
+  --font:        'MadeOuterSans', 'Arial Black', sans-serif;
+  --font-sub:    'AfacadFlux', 'Inter', sans-serif;
+  --radius:      12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-* {
+/* =============================================
+   RESET & BASE
+   ============================================= */
+*, *::before, *::after {
   box-sizing: border-box;
-  padding: 0;
   margin: 0;
+  padding: 0;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+html {
+  scroll-behavior: smooth;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+body {
+  background-color: var(--bg);
+  color: var(--white);
+  font-family: var(--font);
+  font-weight: 400;
+  overflow-x: hidden;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; color: inherit; }
+ul { list-style: none; }
+img { display: block; max-width: 100%; }
+button { font-family: var(--font); cursor: pointer; }
+input, textarea { font-family: var(--font); }
+
+/* =============================================
+   SCROLL REVEAL
+   ============================================= */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s ease, transform 0.7s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
 }

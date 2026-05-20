@@ -1,0 +1,118 @@
+/* CurvedLoop text animation */
+.curvedJacket {
+  width: 100%;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px 0;
+}
+
+.curvedSvg {
+  user-select: none;
+  width: 100%;
+  aspect-ratio: 100 / 12;
+  overflow: visible;
+  display: block;
+  font-size: 5rem;
+  fill: var(--white);
+  font-weight: 900;
+  text-transform: uppercase;
+  line-height: 1;
+  font-family: var(--font);
+}
+
+/* LogoLoop styles */
+.logoSection {
+  padding: 28px 0;
+  border-top: 1px solid var(--gray-light);
+  border-bottom: 1px solid var(--gray-light);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.logoLabel {
+  font-size: 12px;
+  color: var(--gray);
+  letter-spacing: 0.08em;
+  text-align: center;
+  margin-bottom: 20px;
+  font-family: var(--font-sub);
+}
+
+.logoTrack {
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  position: relative;
+}
+
+.logoInner {
+  display: flex;
+  align-items: center;
+  gap: 56px;
+  animation: logoScroll 53s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+  flex-shrink: 0;
+}
+
+.logoInner2 {
+  display: flex;
+  align-items: center;
+  gap: 56px;
+  animation: logoScroll 53s linear infinite;
+  white-space: nowrap;
+  will-change: transform;
+  flex-shrink: 0;
+  margin-left: 56px;
+}
+
+.logoItem {
+  color: var(--gray);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: color 0.2s;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.logoItem:hover {
+  color: var(--white);
+}
+
+.logoText {
+  font-family: var(--font-sub);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: inherit;
+}
+
+@keyframes logoScroll {
+  0% {
+    transform: translateX(0);
+  }
+
+  100% {
+    transform: translateX(-100%);
+  }
+}
+
+/* Marquee (CurvedLoop section) — no border, flows into MY SOURCE */
+.marqueeSection {
+  background: var(--bg);
+  overflow: hidden;
+  cursor: grab;
+  margin-top: -1px;
+}
+
+.marqueeSection:active {
+  cursor: grabbing;
+}
+
+/* Orange stars in curved loop text */
+.curvedSvg tspan.star {
+  fill: var(--orange);
+}

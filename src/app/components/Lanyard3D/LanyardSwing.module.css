@@ -1,0 +1,40 @@
+/* Pivot point = top-center of the lanyard strap attachment */
+.pivot {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform-origin: top center;
+  z-index: 2;
+  user-select: none;
+  pointer-events: auto;
+}
+
+.lanyard {
+  transform-origin: top center;
+  will-change: transform;
+}
+
+.img {
+  width: 440px;
+  height: auto;
+  display: block;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+@media (max-width: 1024px) {
+  .img {
+    width: 340px;
+  }
+}
+
+@media (max-width: 768px) {
+  .pivot {
+    left: 55%;
+  }
+
+  .img {
+    width: 260px;
+  }
+}

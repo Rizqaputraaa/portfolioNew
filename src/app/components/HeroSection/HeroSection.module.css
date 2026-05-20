@@ -1,0 +1,108 @@
+.hero {
+  position: relative;
+  min-height: 65vh;
+  display: flex;
+  align-items: center;
+  padding-top: 64px;
+  background: linear-gradient(160deg, #0C0C0C 0%, #0C0C0C 60%, #1B1B1B 100%);
+}
+
+/* Lanyard container — full screen to allow dragging anywhere */
+.lanyardWrap {
+  position: absolute;
+  top: -30vh;
+  left: 0;
+  width: 100vw;
+  height: 160vh;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  pointer-events: none;
+  z-index: 50;
+}
+
+.content {
+  position: relative;
+  z-index: 3;
+  padding: 0 60px 60px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  pointer-events: none;
+}
+
+.textGroup {
+  max-width: 520px;
+  pointer-events: auto;
+}
+
+.welcome {
+  display: block;
+  font-size: clamp(12px, 1vw, 15px);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--white);
+  margin-bottom: 4px;
+  font-family: var(--font-sub);
+}
+
+.title {
+  font-size: clamp(72px, 11vw, 148px);
+  font-weight: 900;
+  line-height: 0.86;
+  letter-spacing: -0.02em;
+  color: var(--white);
+  text-transform: uppercase;
+}
+
+.sub {
+  font-family: var(--font-sub);
+  font-size: clamp(13px, 1vw, 15px);
+  font-weight: 400;
+  color: var(--gray);
+  margin-top: 20px;
+  line-height: 1.75;
+  max-width: 320px;
+}
+
+.cta {
+  display: inline-block;
+  margin-top: 28px;
+  padding: 14px 28px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 8px;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.cta:hover {
+  background: var(--orange-hover);
+  transform: translateY(-2px);
+}
+
+@media (max-width: 900px) {
+  .content { padding: 80px 24px 40px; }
+  .title { font-size: clamp(58px, 14vw, 110px); }
+}
+
+@media (max-width: 640px) {
+  /* Taller hero so text + right-side card both have space */
+  .hero { min-height: 80vh; }
+
+  /* Lock text group to left ~55% so the right side is free for the card */
+  .textGroup { max-width: 55%; }
+
+  /* Title smaller so it doesn't clash with the card */
+  .title { font-size: clamp(28px, 10vw, 52px); }
+
+  /* Subtitles smaller on very narrow screens */
+  .sub { max-width: 100%; font-size: 12px; margin-top: 12px; }
+
+  /* CTA button full-width feeling but contained to text group */
+  .cta { padding: 12px 20px; font-size: 10px; }
+}
