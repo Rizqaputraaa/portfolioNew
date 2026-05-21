@@ -6,7 +6,7 @@
 .thumb {
   width: 100%;
   aspect-ratio: 356 / 254;
-  background: #1e1e1e;
+  background: #cecece;
   border-radius: var(--radius);
   overflow: hidden;
   position: relative;
@@ -32,12 +32,13 @@
 }
 
 .placeholder {
-  color: #3a3a3a;
+  color: #999;
   font-size: 12px;
   font-weight: 400;
   letter-spacing: 0.04em;
   pointer-events: none;
   user-select: none;
+  font-family: var(--font-sub);
 }
 
 .info {

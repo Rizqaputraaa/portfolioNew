@@ -1,0 +1,235 @@
+/* ════════════════════════════════════════
+   CONTACT PAGE
+════════════════════════════════════════ */
+
+.page {
+  padding-top: 64px;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 0 40px 32px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  text-align: center;
+}
+
+.heroTitle {
+  font-size: clamp(60px, 10vw, 160px);
+  font-weight: 900;
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--white);
+  text-align: center;
+}
+
+.heroSub {
+  font-family: var(--font-sub);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--gray);
+  line-height: 1.7;
+  margin-top: 20px;
+  text-align: center;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* ── Form area ── */
+.formWrap {
+  flex: 1;
+  max-width: 560px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 0 40px 64px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+/* Two inputs side by side */
+.row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0;
+}
+
+.input {
+  padding: 18px 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--gray-light);
+  color: var(--white);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+/* Row inputs */
+.row .input:first-child {
+  border-radius: 8px 0 0 0;
+  border-right: none;
+}
+.row .input:last-child {
+  border-radius: 0 8px 0 0;
+}
+
+.input::placeholder { color: var(--gray); }
+.input:focus { border-color: rgba(255,255,255,0.3); }
+
+.textarea {
+  padding: 18px 20px;
+  background: var(--bg-2);
+  border: 1px solid var(--gray-light);
+  border-top: none;
+  color: var(--white);
+  font-family: var(--font-sub);
+  font-size: 13px;
+  outline: none;
+  resize: none;
+  line-height: 1.7;
+  transition: border-color 0.2s;
+  border-radius: 0 0 8px 8px;
+  width: 100%;
+}
+
+.textarea::placeholder {
+  color: var(--gray);
+  font-family: var(--font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.textarea:focus { border-color: rgba(255,255,255,0.3); }
+
+/* Submit button */
+.submitWrap {
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
+}
+
+.submitBtn {
+  padding: 14px 48px;
+  background: transparent;
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  border: 1px solid var(--gray-light);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.submitBtn:hover:not(:disabled) {
+  border-color: var(--white);
+  background: rgba(255,255,255,0.04);
+}
+
+.submitBtn:disabled { opacity: 0.5; cursor: default; }
+
+/* Success message */
+.successMsg {
+  text-align: center;
+  padding: 60px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.successMsg span {
+  font-size: 48px;
+  color: var(--orange);
+}
+
+.successMsg p {
+  font-family: var(--font-sub);
+  font-size: 15px;
+  color: var(--gray);
+  line-height: 1.7;
+}
+
+/* ── CTA Strip ── */
+.ctaStrip {
+  background: var(--bg-2);
+  border-top: 1px solid var(--gray-light);
+  padding: 52px 40px;
+}
+
+.ctaInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.ctaText h3 {
+  font-size: 20px; font-weight: 900;
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--white); margin-bottom: 6px;
+}
+
+.ctaText p { font-family: var(--font-sub); font-size: 13px; color: var(--gray); }
+
+.ctaActions { display: flex; flex-shrink: 0; }
+
+.ctaBtnDm {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 13px 28px;
+  background: transparent; color: var(--white);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  border: 1px solid var(--gray-light);
+  border-radius: 8px 0 0 8px;
+  transition: border-color 0.2s; text-decoration: none;
+}
+.ctaBtnDm:hover { border-color: rgba(255,255,255,0.35); }
+
+.ctaBtnEmail {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 13px 28px;
+  background: var(--orange); color: var(--white);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  border: none; border-radius: 0 8px 8px 0;
+  transition: background 0.2s; text-decoration: none;
+}
+.ctaBtnEmail:hover { background: var(--orange-hover); }
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
+@media (max-width: 768px) {
+  .hero { padding: 0 24px 24px; }
+  .formWrap { padding: 0 24px 48px; }
+  .row { grid-template-columns: 1fr; }
+  .row .input:first-child { border-radius: 8px 8px 0 0; border-right: 1px solid var(--gray-light); border-bottom: none; }
+  .row .input:last-child { border-radius: 0; border-bottom: none; }
+  .textarea { border-radius: 0 0 8px 8px; }
+  .ctaStrip { padding: 40px 24px; }
+  .ctaInner { flex-direction: column; align-items: flex-start; }
+  .ctaActions { width: 100%; }
+  .ctaBtnDm { flex: 1; border-radius: 8px 0 0 8px; }
+  .ctaBtnEmail { flex: 1; border-radius: 0 8px 8px 0; }
+}
+
+@media (max-width: 480px) {
+  .heroTitle { font-size: clamp(48px, 14vw, 90px); }
+}

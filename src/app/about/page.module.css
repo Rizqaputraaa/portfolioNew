@@ -1,0 +1,282 @@
+/* ════════════════════════════════════════
+   ABOUT PAGE
+════════════════════════════════════════ */
+
+.page {
+  padding-top: 64px;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 0 40px 48px;
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-size: clamp(100px, 16vw, 220px);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--white);
+  text-align: center;
+  width: 100%;
+}
+
+.heroSub {
+  font-family: var(--font-sub);
+  font-size: 14px;
+  font-style: italic;
+  color: var(--gray);
+  line-height: 1.7;
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* ── Bio + Photo row ── */
+.bioSection {
+  max-width: 1280px;
+  margin: 0 auto 32px;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+  align-items: stretch;
+  min-height: 420px;
+}
+
+/* Bio card — PixelBlast bg + text overlay */
+.bioCard {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg);
+  min-height: 380px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pixelBg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.bioText {
+  position: relative;
+  z-index: 1;
+  padding: 48px;
+}
+
+.bioText p {
+  font-family: var(--font-sub);
+  font-size: 16px;
+  line-height: 1.85;
+  color: var(--white);
+  max-width: 540px;
+}
+
+.bioText strong {
+  font-weight: 900;
+  font-style: normal;
+  letter-spacing: 0.04em;
+}
+
+/* Photo */
+.photoWrap {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  min-height: 380px;
+}
+
+.photo {
+  object-fit: cover;
+  object-position: top center;
+  filter: grayscale(100%);
+}
+
+/* ── Education card ── */
+.eduSection {
+  max-width: 1280px;
+  margin: 0 auto 0;
+  padding: 0 40px;
+}
+
+.eduCard {
+  background: var(--bg-2);
+  border: 1px solid var(--gray-light);
+  border-radius: var(--radius);
+  padding: 48px;
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  grid-template-rows: auto auto;
+  gap: 0 40px;
+  position: relative;
+}
+
+.eduLogo {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+
+.eduLogoImg {
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+  opacity: 0.9;
+}
+
+.eduDegrees {
+  grid-column: 2;
+  grid-row: 1;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+}
+
+.eduDegree {}
+
+.eduTitle {
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.eduMeta {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  color: var(--gray);
+  margin-bottom: 12px;
+}
+
+.eduMeta strong {
+  color: var(--white);
+}
+
+.eduDesc {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--gray);
+}
+
+.eduQuote {
+  grid-column: 2;
+  grid-row: 2;
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-style: italic;
+  color: var(--gray);
+  text-align: right;
+  margin-top: 24px;
+}
+
+/* ── CTA Strip — always flush against footer ── */
+.ctaStrip {
+  background: var(--bg-2);
+  border-top: 1px solid var(--gray-light);
+  margin-top: auto;
+  padding: 52px 40px;
+}
+
+.ctaInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.ctaText h3 {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.ctaText p {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.ctaActions { display: flex; flex-shrink: 0; }
+
+.ctaBtnDm {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 13px 28px;
+  background: transparent; color: var(--white);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  border: 1px solid var(--gray-light);
+  border-radius: 8px 0 0 8px;
+  transition: border-color 0.2s; text-decoration: none;
+}
+.ctaBtnDm:hover { border-color: rgba(255,255,255,0.35); }
+
+.ctaBtnEmail {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 13px 28px;
+  background: var(--orange); color: var(--white);
+  font-size: 11px; font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase;
+  border: none; border-radius: 0 8px 8px 0;
+  transition: background 0.2s; text-decoration: none;
+}
+.ctaBtnEmail:hover { background: var(--orange-hover); }
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .hero { padding: 0 24px 36px; }
+
+  .bioSection {
+    grid-template-columns: 1fr;
+    padding: 0 24px;
+    min-height: unset;
+  }
+
+  .photoWrap { min-height: 360px; }
+
+  .eduSection { padding: 0 24px; }
+
+  .eduCard {
+    grid-template-columns: 64px 1fr;
+    gap: 0 24px;
+    padding: 32px 24px;
+  }
+
+  .eduDegrees { grid-template-columns: 1fr; gap: 32px; }
+
+  .ctaStrip { padding: 40px 24px; }
+  .ctaInner { flex-direction: column; align-items: flex-start; }
+  .ctaActions { width: 100%; }
+  .ctaBtnDm { flex: 1; border-radius: 8px 0 0 8px; }
+  .ctaBtnEmail { flex: 1; border-radius: 0 8px 8px 0; }
+}
+
+@media (max-width: 640px) {
+  .heroTitle { font-size: clamp(72px, 20vw, 140px); }
+  .bioText { padding: 32px 24px; }
+  .eduCard {
+    grid-template-columns: 1fr;
+    gap: 24px;
+  }
+  .eduLogo { grid-column: 1; grid-row: 1; }
+  .eduDegrees { grid-column: 1; grid-row: 2; }
+  .eduQuote { grid-column: 1; grid-row: 3; text-align: left; }
+}

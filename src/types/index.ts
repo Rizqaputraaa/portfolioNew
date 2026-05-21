@@ -40,11 +40,15 @@ export interface Source {
   category: SourceCategory;
   thumbnail: string | null;
   images: string[];
+  description: string | null;
+  how_to_use: string | null;
+  section_image: string | null;
   file_size: string | null;
   file_type: string | null;
   dimensions: string | null;
   file_count: number | null;
-  download_url: string | null;
+  drive_url: string | null;      // free download (Google Drive)
+  download_url: string | null;   // premium download (Mylynk)
   tutorial_url: string | null;
   published: boolean;
   created_at: string;

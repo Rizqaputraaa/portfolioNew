@@ -1,0 +1,297 @@
+/* ════════════════════════════════════════
+   SOURCE LIST PAGE
+════════════════════════════════════════ */
+
+.page {
+  padding-top: 64px;
+  background: var(--bg);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Hero ── */
+.hero {
+  padding: 0 40px 8px;
+  max-width: 1280px;
+  margin: 0 auto;
+  width: 100%;
+  text-align: center;
+}
+
+.heroTitle {
+  font-size: clamp(100px, 16vw, 220px);
+  font-weight: 900;
+  line-height: 0.88;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: var(--white);
+  text-align: center;
+}
+
+.heroSub {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  font-style: italic;
+  color: var(--gray);
+  margin-top: 8px;
+  text-align: center;
+}
+
+/* ── Category tabs (centered) ── */
+.tabs {
+  max-width: 1280px;
+  margin: 32px auto 40px;
+  padding: 0 40px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.tab {
+  padding: 9px 20px;
+  border-radius: 6px;
+  border: 1px solid var(--gray-light);
+  background: transparent;
+  color: var(--gray);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.tab:hover {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.tabActive {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--white);
+}
+
+/* ── Content area (grows to push CTA down) ── */
+.contentArea {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 48px;
+}
+
+/* ── Grid animation — cards slide in one by one ── */
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Source grid ── */
+.grid {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  width: 100%;
+}
+
+.grid .card {
+  opacity: 0;
+  animation: cardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.grid .card:nth-child(1)  { animation-delay: 0.00s; }
+.grid .card:nth-child(2)  { animation-delay: 0.06s; }
+.grid .card:nth-child(3)  { animation-delay: 0.12s; }
+.grid .card:nth-child(4)  { animation-delay: 0.18s; }
+.grid .card:nth-child(5)  { animation-delay: 0.24s; }
+.grid .card:nth-child(6)  { animation-delay: 0.30s; }
+.grid .card:nth-child(7)  { animation-delay: 0.36s; }
+.grid .card:nth-child(8)  { animation-delay: 0.42s; }
+.grid .card:nth-child(9)  { animation-delay: 0.48s; }
+
+.gridLoading { opacity: 0.4; pointer-events: none; }
+
+.card { display: block; cursor: pointer; }
+
+.thumb {
+  width: 100%;
+  aspect-ratio: 356 / 254;
+  background: #cecece;
+  border-radius: var(--radius);
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .thumb { transform: translateY(-4px); }
+
+.thumbImg {
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.card:hover .thumbImg { transform: scale(1.05); }
+
+.thumbPlaceholder {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  color: #999;
+  user-select: none;
+}
+
+.cardInfo {
+  margin-top: 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.cardName {
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--white);
+}
+
+.badgeNew {
+  padding: 3px 10px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  border-radius: 4px;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+/* ── Pagination ── */
+.pagination {
+  max-width: 1280px;
+  margin: 40px auto 0;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.pageBtn {
+  width: 40px; height: 40px;
+  border-radius: 8px;
+  border: 1px solid var(--gray-light);
+  background: transparent;
+  color: var(--gray);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, border-color 0.18s;
+}
+
+.pageBtn:hover:not(:disabled) { color: var(--white); border-color: rgba(255,255,255,0.2); }
+.pageBtn:disabled { opacity: 0.3; cursor: default; }
+.pageBtnActive { background: var(--orange); border-color: var(--orange); color: var(--white); }
+
+/* ── Subscribe strip ── */
+.ctaStrip {
+  background: var(--bg-2);
+  border-top: 1px solid var(--gray-light);
+  margin-top: 60px;
+  padding: 52px 40px;
+}
+
+.ctaInner {
+  max-width: 1280px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  flex-wrap: wrap;
+}
+
+.ctaText h3 {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--white);
+  margin-bottom: 6px;
+}
+
+.ctaText p {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  color: var(--gray);
+}
+
+.form {
+  display: flex;
+  flex-shrink: 0;
+  gap: 0;
+}
+
+.input {
+  padding: 13px 20px;
+  background: transparent;
+  border: 1px solid var(--gray-light);
+  border-right: none;
+  border-radius: 8px 0 0 8px;
+  color: var(--white);
+  font-family: var(--font-sub);
+  font-size: 13px;
+  width: 240px;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.input::placeholder { color: var(--gray); }
+.input:focus { border-color: var(--gray); }
+
+.btn {
+  padding: 13px 22px;
+  background: var(--orange);
+  color: var(--white);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 0 8px 8px 0;
+  cursor: pointer;
+  transition: background 0.2s;
+  white-space: nowrap;
+}
+
+.btn:hover { background: var(--orange-hover); }
+
+/* ════════════════════════════════════════
+   RESPONSIVE
+════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .hero { padding: 0 24px 8px; }
+  .tabs { padding: 0 24px; margin: 24px auto 32px; }
+  .grid { padding: 0 24px; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .ctaStrip { padding: 40px 24px; }
+  .ctaInner { flex-direction: column; align-items: flex-start; }
+  .form { flex-direction: column; gap: 10px; width: 100%; }
+  .input { width: 100%; border-right: 1px solid var(--gray-light); border-radius: 8px; }
+  .btn { border-radius: 8px; }
+}
+
+@media (max-width: 640px) {
+  .heroTitle { font-size: clamp(60px, 18vw, 120px); }
+}
+
+@media (max-width: 480px) {
+  .grid { grid-template-columns: 1fr; }
+}

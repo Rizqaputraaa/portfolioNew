@@ -4,9 +4,9 @@ import { useState } from 'react';
 import Image from 'next/image';
 import styles from './page.module.css';
 
-// Recommended cover image dimensions for this slider
+// Recommended cover dimensions for source detail
 const COVER_W = 1920;
-const COVER_H = 700;
+const COVER_H = 800;
 const PLACEHOLDER_COUNT = 5;
 
 interface Props {
@@ -17,7 +17,6 @@ interface Props {
 export default function CoverSlider({ images, title }: Props) {
   const [current, setCurrent] = useState(0);
 
-  // If no real images, show 5 gray placeholder slots
   const isEmpty = images.length === 0;
   const total = isEmpty ? PLACEHOLDER_COUNT : images.length;
 
@@ -57,15 +56,23 @@ export default function CoverSlider({ images, title }: Props) {
         }
       </div>
 
-      {/* Controls — only show when more than 1 image */}
+      {/* Controls — always show when multiple slides */}
       {total > 1 && (
         <>
-          <button className={`${styles.sliderBtn} ${styles.sliderBtnPrev}`} onClick={prev} aria-label="Previous">
+          <button
+            className={`${styles.sliderBtn} ${styles.sliderBtnPrev}`}
+            onClick={prev}
+            aria-label="Previous"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
-          <button className={`${styles.sliderBtn} ${styles.sliderBtnNext}`} onClick={next} aria-label="Next">
+          <button
+            className={`${styles.sliderBtn} ${styles.sliderBtnNext}`}
+            onClick={next}
+            aria-label="Next"
+          >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 18 15 12 9 6" />
             </svg>

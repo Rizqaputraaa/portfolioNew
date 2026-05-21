@@ -15,14 +15,28 @@
   transition: transform 0.32s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.shiftLeft {
-  transform: translateX(-3%);
-}
-.shiftRight {
-  transform: translateX(3%);
+.shiftLeft  { transform: translateX(-3%); }
+.shiftRight { transform: translateX(3%); }
+
+/* ── Placeholder (gray box with dimensions) ── */
+.placeholder {
+  position: absolute;
+  inset: 0;
+  background: #2a2a2a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-/* Main center card — rendered as <Link> so needs display:block */
+.placeholderDim {
+  font-family: var(--font-sub);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: #555;
+}
+
+/* ── Main center card ── */
 .mainCard {
   display: block;
   flex: 0 0 75%;
@@ -32,21 +46,14 @@
   cursor: pointer;
 }
 
-/* Peek side cards — cropped at edges */
+/* ── Peek side cards ── */
 .peekCard {
+  display: block;
   flex: 0 0 12.5%;
   position: relative;
   overflow: hidden;
   cursor: pointer;
   z-index: 0;
-}
-
-.peekLeft {
-  /* left edge is clipped by the section overflow:hidden */
-}
-
-.peekRight {
-  /* right edge is clipped by the section overflow:hidden */
 }
 
 .overlay {
@@ -56,11 +63,9 @@
   transition: background 0.25s;
 }
 
-.peekCard:hover .overlay {
-  background: rgba(0, 0, 0, 0.52);
-}
+.peekCard:hover .overlay { background: rgba(0, 0, 0, 0.45); }
 
-/* Card info label on main card */
+/* ── Card info label ── */
 .cardInfo {
   position: absolute;
   bottom: 24px;
@@ -87,7 +92,7 @@
   text-transform: uppercase;
 }
 
-/* Nav buttons — rounded circle with SVG arrow */
+/* ── Nav buttons ── */
 .navBtn {
   position: absolute;
   top: 50%;
@@ -113,14 +118,14 @@
   transform: translateY(-50%) scale(1.06);
 }
 
-/* Positioned just inside the main card edges */
 .navLeft  { left:  calc(12.5% + 16px); }
 .navRight { right: calc(12.5% + 16px); }
 
 @media (max-width: 768px) {
-  .section { height: 300px; }
-  .peekCard { flex: 0 0 10%; }
-  .navLeft  { left:  calc(10% + 8px); }
-  .navRight { right: calc(10% + 8px); }
-  .navBtn   { width: 40px; height: 40px; }
+  .section   { height: 300px; }
+  .peekCard  { flex: 0 0 10%; }
+  .navLeft   { left:  calc(10% + 8px); }
+  .navRight  { right: calc(10% + 8px); }
+  .navBtn    { width: 40px; height: 40px; }
+  .placeholderDim { font-size: 11px; }
 }

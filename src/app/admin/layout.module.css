@@ -1,0 +1,142 @@
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: #141414;
+}
+
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: #0c0c0c;
+  border-right: 1px solid #2a2a2a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+}
+
+.logo {
+  padding: 24px 20px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--white);
+  border-bottom: 1px solid #2a2a2a;
+  text-transform: uppercase;
+}
+
+.logoSub {
+  font-size: 10px;
+  color: var(--gray);
+  letter-spacing: 0.15em;
+  margin-top: 2px;
+  font-family: var(--font-sub);
+}
+
+.nav {
+  flex: 1;
+  padding: 16px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  color: var(--gray);
+  text-decoration: none;
+  font-family: var(--font-sub);
+  font-size: 14px;
+  transition: color 0.15s, background 0.15s;
+  border-left: 3px solid transparent;
+}
+
+.navLink:hover {
+  color: var(--white);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.navLinkActive {
+  color: var(--white);
+  border-left-color: var(--orange);
+  background: rgba(213, 99, 26, 0.08);
+}
+
+.navIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.sidebarFooter {
+  padding: 16px 20px;
+  border-top: 1px solid #2a2a2a;
+}
+
+.userEmail {
+  font-family: var(--font-sub);
+  font-size: 12px;
+  color: var(--gray);
+  margin-bottom: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.logoutBtn {
+  width: 100%;
+  padding: 8px 12px;
+  background: transparent;
+  border: 1px solid #2a2a2a;
+  border-radius: var(--radius);
+  color: var(--gray);
+  font-family: var(--font-sub);
+  font-size: 13px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+  text-align: left;
+}
+
+.logoutBtn:hover {
+  color: #c0392b;
+  border-color: #c0392b;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 32px;
+  background: #141414;
+}
+
+.loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #141414;
+  color: var(--gray);
+  font-family: var(--font-sub);
+  font-size: 14px;
+}
+
+.spinner {
+  width: 20px;
+  height: 20px;
+  border: 2px solid #2a2a2a;
+  border-top-color: var(--orange);
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-right: 10px;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
