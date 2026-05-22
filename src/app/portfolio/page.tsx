@@ -91,25 +91,32 @@ function PortfolioInner() {
 
       {/* ── Content area (grows to fill) ── */}
       <div className={styles.contentArea}>
-        <div
-          key={animKey}
-          className={`${styles.grid} ${loading ? styles.gridLoading : ''}`}
-        >
-          {visible.map(p => (
-            <Link key={p.id} href={`/portfolio/${p.slug}`} className={styles.card}>
-              <div className={styles.thumb}>
-                {p.thumbnail ? (
-                  <Image src={p.thumbnail} alt={p.title} fill className={styles.thumbImg} sizes="(max-width: 768px) 50vw, 33vw" />
-                ) : (
-                  <span className={styles.thumbPlaceholder}>356px × 254px</span>
-                )}
-              </div>
-              <div className={styles.cardInfo}>
-                <span className={styles.cardName}>{p.title}</span>
-                {p.is_new && <span className={styles.badgeNew}>NEW</span>}
-              </div>
-            </Link>
-          ))}
+        <div key={animKey} className={styles.grid}>
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeletonCard}>
+                  <div className={styles.skeletonThumb} />
+                  <div className={styles.skeletonInfo}>
+                    <div className={styles.skeletonLine} />
+                  </div>
+                </div>
+              ))
+            : visible.map(p => (
+                <Link key={p.id} href={`/portfolio/${p.slug}`} className={styles.card}>
+                  <div className={styles.thumb}>
+                    {p.thumbnail ? (
+                      <Image src={p.thumbnail} alt={p.title} fill className={styles.thumbImg} sizes="(max-width: 768px) 50vw, 33vw" />
+                    ) : (
+                      <span className={styles.thumbPlaceholder}>356px × 254px</span>
+                    )}
+                  </div>
+                  <div className={styles.cardInfo}>
+                    <span className={styles.cardName}>{p.title}</span>
+                    {p.is_new && <span className={styles.badgeNew}>NEW</span>}
+                  </div>
+                </Link>
+              ))
+          }
         </div>
 
         {/* ── Pagination ── */}

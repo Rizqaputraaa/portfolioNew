@@ -190,12 +190,12 @@
 }
 
 .badgeFree {
-  background: rgba(76, 175, 80, 0.9);
+  background: var(--orange);
   color: var(--white);
 }
 
 .badgePremium {
-  background: rgba(255, 152, 0, 0.9);
+  background: var(--orange);
   color: var(--white);
 }
 
@@ -298,6 +298,37 @@
 }
 
 .btn:hover { background: var(--orange-hover); }
+
+/* ── Skeleton loading ── */
+@keyframes shimmer {
+  0%   { background-position: -600px 0; }
+  100% { background-position: 600px 0; }
+}
+
+.skeletonCard { display: block; }
+
+.skeletonThumb {
+  width: 100%;
+  aspect-ratio: 356 / 254;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, #1c1c1c 25%, #2a2a2a 50%, #1c1c1c 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+}
+
+.skeletonInfo {
+  margin-top: 12px;
+}
+
+.skeletonLine {
+  height: 13px;
+  width: 60%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, #1c1c1c 25%, #2a2a2a 50%, #1c1c1c 75%);
+  background-size: 600px 100%;
+  animation: shimmer 1.4s infinite linear;
+  animation-delay: 0.1s;
+}
 
 /* ════════════════════════════════════════
    RESPONSIVE

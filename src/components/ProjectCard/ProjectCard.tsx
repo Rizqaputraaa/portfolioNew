@@ -11,6 +11,10 @@ interface ProjectCardProps {
 }
 
 export default function ProjectCard({ item, basePath = '/portfolio' }: ProjectCardProps) {
+  const isFree = !!item.drive_url;
+  const isPremium = !!item.download_url;
+  const priceBadge = isFree ? 'FREE' : (isPremium && item.price ? item.price : null);
+
   return (
     <Link href={`${basePath}/${item.slug}`} className={styles.card}>
       <div className={styles.thumb}>
@@ -24,6 +28,11 @@ export default function ProjectCard({ item, basePath = '/portfolio' }: ProjectCa
           />
         ) : (
           <span className={styles.placeholder}>356px × 254px</span>
+        )}
+        {priceBadge && (
+          <span className={styles.badgePrice}>
+            {priceBadge}
+          </span>
         )}
       </div>
       <div className={styles.info}>

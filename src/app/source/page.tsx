@@ -101,33 +101,43 @@ function SourceInner() {
 
       {/* ── Content area ── */}
       <div className={styles.contentArea}>
-        <div key={animKey} className={`${styles.grid} ${loading ? styles.gridLoading : ''}`}>
-          {visible.map(s => {
-            const isFree = !!s.drive_url;
-            const isPremium = !!s.download_url;
-            const badgeLabel = isFree ? 'FREE' : (isPremium && s.price ? s.price : null);
+        <div key={animKey} className={styles.grid}>
+          {loading
+            ? Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className={styles.skeletonCard}>
+                  <div className={styles.skeletonThumb} />
+                  <div className={styles.skeletonInfo}>
+                    <div className={styles.skeletonLine} />
+                  </div>
+                </div>
+              ))
+            : visible.map(s => {
+                const isFree = !!s.drive_url;
+                const isPremium = !!s.download_url;
+                const badgeLabel = isFree ? 'FREE' : (isPremium && s.price ? s.price : null);
 
-            return (
-              <Link key={s.id} href={`/source/${s.slug}`} className={styles.card}>
-                <div className={styles.thumb}>
-                  {s.thumbnail ? (
-                    <Image src={s.thumbnail} alt={s.title} fill className={styles.thumbImg} sizes="(max-width: 768px) 50vw, 33vw" />
-                  ) : (
-                    <span className={styles.thumbPlaceholder}>356px × 254px</span>
-                  )}
-                  {badgeLabel && (
-                    <span className={`${styles.badgePricingOrFree} ${isFree ? styles.badgeFree : styles.badgePremium}`}>
-                      {badgeLabel}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.cardInfo}>
-                  <span className={styles.cardName}>{s.title}</span>
-                  {s.is_new && <span className={styles.badgeNew}>NEW</span>}
-                </div>
-              </Link>
-            );
-          })}
+                return (
+                  <Link key={s.id} href={`/source/${s.slug}`} className={styles.card}>
+                    <div className={styles.thumb}>
+                      {s.thumbnail ? (
+                        <Image src={s.thumbnail} alt={s.title} fill className={styles.thumbImg} sizes="(max-width: 768px) 50vw, 33vw" />
+                      ) : (
+                        <span className={styles.thumbPlaceholder}>356px × 254px</span>
+                      )}
+                      {badgeLabel && (
+                        <span className={`${styles.badgePricingOrFree} ${isFree ? styles.badgeFree : styles.badgePremium}`}>
+                          {badgeLabel}
+                        </span>
+                      )}
+                    </div>
+                    <div className={styles.cardInfo}>
+                      <span className={styles.cardName}>{s.title}</span>
+                      {s.is_new && <span className={styles.badgeNew}>NEW</span>}
+                    </div>
+                  </Link>
+                );
+              })
+          }
         </div>
 
         {totalPages > 1 && (
