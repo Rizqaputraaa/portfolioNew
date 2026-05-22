@@ -141,8 +141,23 @@ export default function SourceForm({ source }: SourceFormProps) {
     }
 
     if (result) {
-      setSuccess(isEdit ? 'Source updated!' : 'Source created!');
-      setTimeout(() => router.push('/admin/sources'), 1200);
+      // Kalau source baru dan published, tawarkan kirim notifikasi
+      if (!isEdit && result.published) {
+        setSuccess('Source created! Mengirim notifikasi ke subscribers...');
+        fetch('/api/notify-subscribers', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sourceTitle: result.title,
+            sourceSlug: result.slug,
+            sourceDescription: result.description,
+            sourceThumbnail: result.thumbnail,
+          }),
+        }).catch(() => null);
+      } else {
+        setSuccess(isEdit ? 'Source updated!' : 'Source created!');
+      }
+      setTimeout(() => router.push('/admin/sources'), 1500);
     } else {
       setError('Something went wrong. Please try again. Check browser console for details.');
     }

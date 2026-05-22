@@ -78,6 +78,10 @@
   border: none;
   border-radius: 8px;
   transition: background 0.2s, transform 0.15s;
+  position: relative;
+  z-index: 100;
+  pointer-events: auto;
+  cursor: pointer;
 }
 
 .cta:hover {

@@ -5,15 +5,38 @@ import styles from './NewsletterSection.module.css';
 
 export default function NewsletterSection() {
   const [email, setEmail] = useState('');
-  const [sent, setSent] = useState(false);
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!email) return;
-    setSent(true);
-    setEmail('');
-    setTimeout(() => setSent(false), 4000);
+    if (!email || status === 'loading') return;
+
+    setStatus('loading');
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        setStatus('success');
+        setEmail('');
+        setTimeout(() => setStatus('idle'), 5000);
+      } else {
+        setStatus('error');
+        setTimeout(() => setStatus('idle'), 3000);
+      }
+    } catch {
+      setStatus('error');
+      setTimeout(() => setStatus('idle'), 3000);
+    }
   }
+
+  const placeholder =
+    status === 'success' ? '✓ Berhasil subscribe!'
+    : status === 'error'  ? '✗ Coba lagi...'
+    : 'Your email address';
 
   return (
     <section className={styles.section} id="newsletter">
@@ -25,15 +48,15 @@ export default function NewsletterSection() {
         <form className={styles.form} onSubmit={handleSubmit}>
           <input
             type="email"
-            className={styles.input}
-            placeholder={sent ? '✓ Subscribed!' : 'Your email address'}
+            className={`${styles.input} ${status === 'error' ? styles.inputError : ''}`}
+            placeholder={placeholder}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
-            id="email-input"
+            disabled={status === 'loading' || status === 'success'}
           />
-          <button type="submit" className={styles.btn}>
-            {sent ? 'DONE!' : 'SUBSCRIBE'}
+          <button type="submit" className={styles.btn} disabled={status === 'loading' || status === 'success'}>
+            {status === 'loading' ? '...' : status === 'success' ? 'DONE!' : 'SUBSCRIBE'}
           </button>
         </form>
       </div>
