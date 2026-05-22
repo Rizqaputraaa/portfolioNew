@@ -19,6 +19,7 @@ const TABS: { label: string; value: Category }[] = [
 interface SourceItem {
   id: string; slug: string; title: string; category: string;
   thumbnail: string | null; is_new?: boolean;
+  drive_url?: string | null; download_url?: string | null; price?: string | null;
 }
 
 const PLACEHOLDER_SOURCES: SourceItem[] = Array.from({ length: 9 }, (_, i) => ({
@@ -36,10 +37,10 @@ function SourceInner() {
 
   const [cat, setCat]         = useState<Category>(initCat);
   const [page, setPage]       = useState(1);
-  const [items, setItems]     = useState<SourceItem[]>(PLACEHOLDER_SOURCES);
+  const [items, setItems]     = useState<SourceItem[]>([]);
   const [email, setEmail]     = useState('');
   const [sent, setSent]       = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [animKey, setAnimKey] = useState(0);
   const mounted = useRef(false);
 
@@ -50,17 +51,17 @@ function SourceInner() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
+    if (!mounted.current) { mounted.current = true; }
     setPage(1);
     setAnimKey(k => k + 1);
     setLoading(true);
     fetch(`/api/sources${cat !== 'all' ? `?category=${cat}` : ''}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data && Array.isArray(data) && data.length > 0) setItems(data);
-        else setItems(PLACEHOLDER_SOURCES);
+        if (Array.isArray(data)) setItems(data);
+        else setItems([]);
       })
-      .catch(() => setItems(PLACEHOLDER_SOURCES))
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [cat]);
 
@@ -101,21 +102,32 @@ function SourceInner() {
       {/* ── Content area ── */}
       <div className={styles.contentArea}>
         <div key={animKey} className={`${styles.grid} ${loading ? styles.gridLoading : ''}`}>
-          {visible.map(s => (
-            <Link key={s.id} href={`/source/${s.slug}`} className={styles.card}>
-              <div className={styles.thumb}>
-                {s.thumbnail ? (
-                  <Image src={s.thumbnail} alt={s.title} fill className={styles.thumbImg} sizes="(max-width: 768px) 50vw, 33vw" />
-                ) : (
-                  <span className={styles.thumbPlaceholder}>356px × 254px</span>
-                )}
-              </div>
-              <div className={styles.cardInfo}>
-                <span className={styles.cardName}>{s.title}</span>
-                {s.is_new && <span className={styles.badgeNew}>NEW</span>}
-              </div>
-            </Link>
-          ))}
+          {visible.map(s => {
+            const isFree = !!s.drive_url;
+            const isPremium = !!s.download_url;
+            const badgeLabel = isFree ? 'FREE' : (isPremium && s.price ? s.price : null);
+
+            return (
+              <Link key={s.id} href={`/source/${s.slug}`} className={styles.card}>
+                <div className={styles.thumb}>
+                  {s.thumbnail ? (
+                    <Image src={s.thumbnail} alt={s.title} fill className={styles.thumbImg} sizes="(max-width: 768px) 50vw, 33vw" />
+                  ) : (
+                    <span className={styles.thumbPlaceholder}>356px × 254px</span>
+                  )}
+                  {badgeLabel && (
+                    <span className={`${styles.badgePricingOrFree} ${isFree ? styles.badgeFree : styles.badgePremium}`}>
+                      {badgeLabel}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.cardInfo}>
+                  <span className={styles.cardName}>{s.title}</span>
+                  {s.is_new && <span className={styles.badgeNew}>NEW</span>}
+                </div>
+              </Link>
+            );
+          })}
         </div>
 
         {totalPages > 1 && (

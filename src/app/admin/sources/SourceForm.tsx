@@ -31,6 +31,7 @@ type FormData = {
   file_count: string;
   drive_url: string;
   download_url: string;
+  price: string;
   tutorial_url: string;
   published: boolean;
 };
@@ -53,6 +54,7 @@ export default function SourceForm({ source }: SourceFormProps) {
     file_count: source?.file_count != null ? String(source.file_count) : '',
     drive_url: source?.drive_url ?? '',
     download_url: source?.download_url ?? '',
+    price: source?.price ?? '',
     tutorial_url: source?.tutorial_url ?? '',
     published: source?.published ?? false,
   });
@@ -89,26 +91,47 @@ export default function SourceForm({ source }: SourceFormProps) {
     setSuccess('');
     setSubmitting(true);
 
+    // Validate required fields
+    if (!form.title.trim()) {
+      setError('Title is required');
+      setSubmitting(false);
+      return;
+    }
+    if (!form.slug.trim()) {
+      setError('Slug is required');
+      setSubmitting(false);
+      return;
+    }
+    if (!form.category) {
+      setError('Category is required');
+      setSubmitting(false);
+      return;
+    }
+
     const fileCountNum = form.file_count !== '' ? parseInt(form.file_count, 10) : null;
 
     const payload: Omit<Source, 'id' | 'created_at'> = {
-      title: form.title,
-      slug: form.slug,
+      title: form.title.trim(),
+      slug: form.slug.trim(),
       category: form.category,
-      description: form.description || null,
-      how_to_use: form.how_to_use || null,
+      description: form.description?.trim() || null,
+      how_to_use: form.how_to_use?.trim() || null,
       images: form.images,
       thumbnail: form.images[0] ?? null,
       section_image: form.section_image || null,
-      file_size: form.file_size || null,
-      file_type: form.file_type || null,
-      dimensions: form.dimensions || null,
-      file_count: isNaN(fileCountNum as number) ? null : fileCountNum,
-      drive_url: form.drive_url || null,
-      download_url: form.download_url || null,
-      tutorial_url: form.tutorial_url || null,
+      file_size: form.file_size?.trim() || null,
+      file_type: form.file_type?.trim() || null,
+      dimensions: form.dimensions?.trim() || null,
+      file_count: fileCountNum && !isNaN(fileCountNum) ? fileCountNum : null,
+      drive_url: form.drive_url?.trim() || null,
+      download_url: form.download_url?.trim() || null,
+      price: form.price?.trim() || null,
+      tutorial_url: form.tutorial_url?.trim() || null,
       published: form.published,
     };
+
+    console.log('Form submitted with payload:', JSON.stringify(payload, null, 2));
+    console.log('Published field:', payload.published);
 
     let result: Source | null = null;
     if (isEdit && source) {
@@ -121,7 +144,7 @@ export default function SourceForm({ source }: SourceFormProps) {
       setSuccess(isEdit ? 'Source updated!' : 'Source created!');
       setTimeout(() => router.push('/admin/sources'), 1200);
     } else {
-      setError('Something went wrong. Please try again.');
+      setError('Something went wrong. Please try again. Check browser console for details.');
     }
 
     setSubmitting(false);
@@ -299,16 +322,30 @@ export default function SourceForm({ source }: SourceFormProps) {
         />
       </div>
 
-      <div className={styles.formGroup}>
-        <label className={styles.label} htmlFor="sf-download">Download URL (Premium)</label>
-        <input
-          id="sf-download"
-          className={styles.input}
-          type="url"
-          value={form.download_url}
-          onChange={(e) => setForm((prev) => ({ ...prev, download_url: e.target.value }))}
-          placeholder="https://mylynk.com/…"
-        />
+      <div className={styles.formRow}>
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="sf-download">Download URL (Premium)</label>
+          <input
+            id="sf-download"
+            className={styles.input}
+            type="url"
+            value={form.download_url}
+            onChange={(e) => setForm((prev) => ({ ...prev, download_url: e.target.value }))}
+            placeholder="https://mylynk.com/…"
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="sf-price">Harga (Premium)</label>
+          <input
+            id="sf-price"
+            className={styles.input}
+            type="text"
+            value={form.price}
+            onChange={(e) => setForm((prev) => ({ ...prev, price: e.target.value }))}
+            placeholder="e.g. $10, Rp 150.000"
+          />
+        </div>
       </div>
 
       <div className={styles.formGroup}>

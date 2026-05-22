@@ -94,12 +94,17 @@ export async function adminCreateSource(
 ): Promise<Source | null> {
   const supabase = getSupabase();
   if (!supabase) return null;
+  console.log('adminCreateSource payload:', JSON.stringify(data, null, 2));
   const { data: created, error } = await supabase
     .from('sources')
     .insert(data)
     .select()
     .single();
-  if (error) { console.error(error.message); return null; }
+  if (error) {
+    console.error('adminCreateSource error:', error);
+    console.error('Error details:', { message: error.message, code: error.code, details: error.details });
+    return null;
+  }
   return created as Source;
 }
 

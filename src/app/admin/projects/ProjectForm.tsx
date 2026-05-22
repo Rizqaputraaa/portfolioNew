@@ -35,30 +35,58 @@ type FormData = {
   published: boolean;
 };
 
+const STORAGE_KEY = 'projectForm_draft';
+
 export default function ProjectForm({ project }: ProjectFormProps) {
   const router = useRouter();
   const isEdit = !!project;
 
-  const [form, setForm] = useState<FormData>({
-    title: project?.title ?? '',
-    slug: project?.slug ?? '',
-    category: project?.category ?? 'logo',
-    client: project?.client ?? '',
-    description: project?.description ?? '',
-    tools: project?.tools ?? [],
-    images: project?.images ?? [],
-    thumbnail: project?.thumbnail ?? '',
-    sections: project?.sections ?? [],
-    is_new: project?.is_new ?? false,
-    published: project?.published ?? false,
-  });
+  const getInitialForm = (): FormData => {
+    // Edit mode: selalu pakai data dari project, bukan localStorage
+    if (isEdit) {
+      return {
+        title: project?.title ?? '',
+        slug: project?.slug ?? '',
+        category: project?.category ?? 'logo',
+        client: project?.client ?? '',
+        description: project?.description ?? '',
+        tools: project?.tools ?? [],
+        images: project?.images ?? [],
+        thumbnail: project?.thumbnail ?? '',
+        sections: project?.sections ?? [],
+        is_new: project?.is_new ?? false,
+        published: project?.published ?? false,
+      };
+    }
+
+    // New project: load draft dari localStorage kalau ada
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { return JSON.parse(saved); } catch { /* ignore */ }
+      }
+    }
+
+    return {
+      title: '', slug: '', category: 'logo', client: '',
+      description: '', tools: [], images: [], thumbnail: '',
+      sections: [], is_new: false, published: false,
+    };
+  };
+
+  const [form, setForm] = useState<FormData>(getInitialForm);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // New image URL being added
-  const [newImageUrl, setNewImageUrl] = useState('');
+  // Auto-save ke localStorage setiap kali form berubah
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(form));
+    }, 500); // Debounce 500ms
+    return () => clearTimeout(timer);
+  }, [form]);
 
   const handleTitleChange = (title: string) => {
     setForm((prev) => ({
@@ -77,15 +105,6 @@ export default function ProjectForm({ project }: ProjectFormProps) {
     }));
   };
 
-  const addImage = (url: string) => {
-    if (!url) return;
-    setForm((prev) => {
-      const images = [...prev.images, url];
-      return { ...prev, images, thumbnail: prev.thumbnail || images[0] };
-    });
-    setNewImageUrl('');
-  };
-
   const removeImage = (index: number) => {
     setForm((prev) => {
       const images = prev.images.filter((_, i) => i !== index);
@@ -102,7 +121,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   const addSection = () => {
     setForm((prev) => ({
       ...prev,
-      sections: [...prev.sections, { image: '', description: '' }],
+      sections: [...prev.sections, { name: '', image: '', description: '' }],
     }));
   };
 
@@ -149,6 +168,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
 
     if (result) {
       setSuccess(isEdit ? 'Project updated!' : 'Project created!');
+      localStorage.removeItem(STORAGE_KEY); // Clear draft after success
       setTimeout(() => router.push('/admin/projects'), 1200);
     } else {
       setError('Something went wrong. Please try again.');
@@ -245,32 +265,47 @@ export default function ProjectForm({ project }: ProjectFormProps) {
         </div>
       </div>
 
-      {/* Images */}
+      {/* Cover */}
       <div className={styles.formGroup}>
-        <label className={styles.label}>Images</label>
-        <div className={styles.imageList}>
+        <label className={styles.label}>Cover (Maximum 5 images)</label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
           {form.images.map((url, i) => (
-            <div key={i} className={styles.imageItem}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={url} alt="" className={styles.imageThumb} />
-              <span className={styles.imageUrl}>{url}</span>
-              <button
-                type="button"
-                className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
-                onClick={() => removeImage(i)}
-              >
-                Remove
-              </button>
+            <div key={i} className={styles.sectionBlock}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Cover {i + 1}</span>
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                  onClick={() => removeImage(i)}
+                >
+                  Remove
+                </button>
+              </div>
+              <p style={{ fontSize: 12, color: '#999', marginBottom: 12 }}>Ukuran: 1920 × 700 px (optional)</p>
+              <ImageUpload
+                value={url}
+                onChange={(newUrl) => {
+                  setForm((prev) => ({
+                    ...prev,
+                    images: prev.images.map((img, idx) => (idx === i ? newUrl : img)),
+                    thumbnail: prev.thumbnail === url ? newUrl : prev.thumbnail,
+                  }));
+                }}
+                folder="projects"
+                label={`cover-${i}`}
+              />
             </div>
           ))}
-        </div>
-        <div style={{ marginTop: 8 }}>
-          <ImageUpload
-            value={newImageUrl}
-            onChange={(url) => { addImage(url); }}
-            folder="projects"
-            label="Add Image"
-          />
+          {form.images.length < 5 && (
+            <button
+              type="button"
+              className={`${styles.btn} ${styles.btnSecondary}`}
+              onClick={() => setForm((prev) => ({ ...prev, images: [...prev.images, ''] }))}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              + Add Cover Image
+            </button>
+          )}
         </div>
       </div>
 
@@ -293,7 +328,14 @@ export default function ProjectForm({ project }: ProjectFormProps) {
           {form.sections.map((section, i) => (
             <div key={i} className={styles.sectionBlock}>
               <div className={styles.sectionHeader}>
-                <span className={styles.sectionTitle}>Section {i + 1}</span>
+                <input
+                  type="text"
+                  className={styles.input}
+                  value={section.name || ''}
+                  onChange={(e) => updateSection(i, 'name', e.target.value)}
+                  placeholder={`Section ${i + 1}`}
+                  style={{ flex: 1, marginRight: 8 }}
+                />
                 <button
                   type="button"
                   className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
@@ -302,11 +344,12 @@ export default function ProjectForm({ project }: ProjectFormProps) {
                   Remove
                 </button>
               </div>
+              <p style={{ fontSize: 12, color: '#999', marginBottom: 12 }}>Ukuran: 1600 × 900 px (optional)</p>
               <ImageUpload
                 value={section.image}
                 onChange={(url) => updateSection(i, 'image', url)}
                 folder="projects/sections"
-                label="Section Image"
+                label={`section-${i}`}
               />
               <textarea
                 className={styles.textarea}

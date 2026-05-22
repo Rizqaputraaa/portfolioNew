@@ -34,6 +34,7 @@ const PLACEHOLDER: Source = {
   file_count: 6,
   drive_url: null,
   download_url: null,
+  price: null,
   tutorial_url: null,
   published: true,
   created_at: new Date().toISOString(),
@@ -66,6 +67,8 @@ export default async function SourcePage({
   /* Determine download href — prefer free (drive_url), fallback to paid */
   const downloadHref = source.drive_url ?? source.download_url ?? null;
   const isFree = !!source.drive_url;
+  /* Button label: show price if premium, otherwise "Download" or "Free Download" */
+  const downloadLabel = isFree ? 'Free Download' : (source.price ?? 'Download');
 
   return (
     <div className={styles.page}>
@@ -166,7 +169,7 @@ export default async function SourcePage({
                   <polyline points="7 10 12 15 17 10" />
                   <line x1="12" y1="15" x2="12" y2="3" />
                 </svg>
-                {isFree ? 'Free Download' : 'Download'}
+                {downloadLabel}
               </a>
             ) : (
               <button className={styles.btnDownload} disabled style={{ opacity: 0.5, cursor: 'default' }}>
@@ -200,7 +203,7 @@ export default async function SourcePage({
         </div>
       </div>
 
-      {/* ── Browse more ── */}
+      {/* ── Browse more ── only show if related sources exist */}
       {related.length > 0 && (
         <section className={styles.browseMore}>
           <div className={styles.browseInner}>
@@ -223,25 +226,6 @@ export default async function SourcePage({
                   </div>
                   <p className={styles.browseName}>{s.title}</p>
                 </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Browse more placeholder when no DB */}
-      {related.length === 0 && (
-        <section className={styles.browseMore}>
-          <div className={styles.browseInner}>
-            <h2 className={styles.browseTitle}>BROWSE MORE</h2>
-            <div className={styles.browseGrid}>
-              {['Source 01', 'Source 02', 'Source 03'].map(name => (
-                <div key={name} className={styles.browseCard}>
-                  <div className={styles.browseThumb}>
-                    <span className={styles.browsePlaceholder}>356px × 254px</span>
-                  </div>
-                  <p className={styles.browseName}>{name}</p>
-                </div>
               ))}
             </div>
           </div>

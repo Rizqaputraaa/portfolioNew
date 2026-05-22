@@ -13,6 +13,7 @@ export type SourceCategory =
 
 /** One content block in the body of a project detail page */
 export interface ProjectSection {
+  name?: string;
   image: string;
   description: string;
 }
@@ -49,6 +50,7 @@ export interface Source {
   file_count: number | null;
   drive_url: string | null;      // free download (Google Drive)
   download_url: string | null;   // premium download (Mylynk)
+  price: string | null;          // price for premium download (e.g. "$10", "Rp 150.000")
   tutorial_url: string | null;
   published: boolean;
   created_at: string;

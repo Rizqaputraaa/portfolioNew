@@ -1,4 +1,6 @@
 import { getProjects, getSources } from '@/lib/db';
+
+export const dynamic = 'force-dynamic';
 import HeroSection from './components/HeroSection/HeroSection';
 import LogoLoop from './components/TechStrip/LogoLoop';
 import FeaturedSlider from './components/FeaturedSlider/FeaturedSlider';
@@ -7,38 +9,27 @@ import CurvedLoop from './components/MarqueeSection/CurvedLoop';
 import NewsletterSection from './components/NewsletterSection/NewsletterSection';
 import type { Project, Source } from '@/types';
 
-// Placeholder items for when DB is not yet connected
-const placeholderProjects: Partial<Project>[] = [
-  { id: '1', slug: 'project-01', title: 'Instagram Pack BKT', is_new: true },
-  { id: '2', slug: 'project-02', title: 'Logo Collection' },
-  { id: '3', slug: 'project-03', title: 'Event Poster' },
-  { id: '4', slug: 'project-04', title: 'Business Card' },
-  { id: '5', slug: 'project-05', title: 'UI Design App' },
-  { id: '6', slug: 'project-06', title: 'Brand Identity', is_new: true },
-];
-
-const placeholderSources: Partial<Source>[] = [
-  { id: '1', slug: 'source-01', title: 'Clean Mockup Pack' },
-  { id: '2', slug: 'source-02', title: 'Overlay Textures Vol.1' },
-  { id: '3', slug: 'source-03', title: 'Grunge Overlays' },
-];
+const CATEGORY_LABELS: Record<string, string> = {
+  insta_pack: 'Instagram Pack', logo: 'Logo Design',
+  poster: 'Poster', printing: 'Printing Design', ui_design: 'UI Design',
+};
 
 export default async function HomePage() {
-  let projects: Partial<Project>[] = placeholderProjects;
-  let sources: Partial<Source>[] = placeholderSources;
+  const [projects, sources] = await Promise.all([getProjects(6), getSources(3)]);
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  if (supabaseUrl && supabaseUrl.startsWith('https://') && !supabaseUrl.includes('your-')) {
-    const [dbProjects, dbSources] = await Promise.all([getProjects(6), getSources(3)]);
-    if (dbProjects.length > 0) projects = dbProjects;
-    if (dbSources.length > 0) sources = dbSources;
-  }
+  const sliderSlides = projects.map(p => ({
+    id: p.id,
+    slug: p.slug,
+    category: CATEGORY_LABELS[p.category] ?? p.category,
+    title: p.title,
+    thumbnail: p.thumbnail,
+  }));
 
   return (
     <>
       <HeroSection />
       <LogoLoop />
-      <FeaturedSlider />
+      <FeaturedSlider slides={sliderSlides} />
       <GridSection
         title="MY WORK"
         allHref="/portfolio"

@@ -50,11 +50,13 @@ const PLACEHOLDER: Project = {
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
   sections: [
     {
+      name: 'Section 01',
       image: '',
       description:
         'Section 01 — Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation.',
     },
     {
+      name: 'Section 02',
       image: '',
       description:
         'Section 02 — Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.',
@@ -155,9 +157,9 @@ export default async function ProjectPage({
         <div className={styles.sectionsWrapper}>
           {project.sections.map((sec, idx) => (
             <section key={idx} className={styles.contentSection}>
-              {/* Large image */}
-              <div className={styles.sectionImageWrap}>
-                {sec.image ? (
+              {/* Large image — only show if image exists */}
+              {sec.image && (
+                <div className={styles.sectionImageWrap}>
                   <Image
                     src={sec.image}
                     alt={`${project!.title} section ${idx + 1}`}
@@ -165,14 +167,14 @@ export default async function ProjectPage({
                     className={styles.sectionImage}
                     sizes="(max-width: 768px) 100vw, 90vw"
                   />
-                ) : (
-                  <div className={styles.sectionImagePlaceholder}>IMAGE</div>
-                )}
-              </div>
+                </div>
+              )}
 
               {/* Caption */}
               <div className={styles.sectionCaption}>
-                <span className={styles.sectionNum}>Section {String(idx + 1).padStart(2, '0')}</span>
+                <span className={styles.sectionNum}>
+                  {sec.name ? sec.name.toUpperCase() : `Section ${String(idx + 1).padStart(2, '0')}`}
+                </span>
                 <p className={styles.sectionDesc}>{sec.description}</p>
               </div>
             </section>
@@ -180,7 +182,7 @@ export default async function ProjectPage({
         </div>
       )}
 
-      {/* ── Browse more ── */}
+      {/* ── Browse more — only show if related projects exist ── */}
       {related.length > 0 && (
         <section className={styles.browseMore}>
           <div className={styles.browseInner}>
@@ -203,25 +205,6 @@ export default async function ProjectPage({
                   </div>
                   <p className={styles.browseName}>{p.title}</p>
                 </Link>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {/* Browse more placeholder when no DB */}
-      {related.length === 0 && (
-        <section className={styles.browseMore}>
-          <div className={styles.browseInner}>
-            <h2 className={styles.browseTitle}>BROWSE MORE</h2>
-            <div className={styles.browseGrid}>
-              {['Project 01', 'Project 02', 'Project 03'].map(name => (
-                <div key={name} className={styles.browseCard}>
-                  <div className={styles.browseThumb}>
-                    <span className={styles.browsePlaceholder}>356px × 254px</span>
-                  </div>
-                  <p className={styles.browseName}>{name}</p>
-                </div>
               ))}
             </div>
           </div>

@@ -37,8 +37,8 @@ function PortfolioInner() {
 
   const [cat, setCat]       = useState<Category>(initCat);
   const [page, setPage]     = useState(1);
-  const [items, setItems]   = useState<ProjectItem[]>(PLACEHOLDER_PROJECTS);
-  const [loading, setLoading] = useState(false);
+  const [items, setItems]   = useState<ProjectItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const [animKey, setAnimKey] = useState(0);
   const mounted = useRef(false);
 
@@ -50,17 +50,17 @@ function PortfolioInner() {
   }, [searchParams]);
 
   useEffect(() => {
-    if (!mounted.current) { mounted.current = true; return; }
+    if (!mounted.current) { mounted.current = true; }
     setPage(1);
-    setAnimKey(k => k + 1); // trigger re-animation
+    setAnimKey(k => k + 1);
     setLoading(true);
     fetch(`/api/projects${cat !== 'all' ? `?category=${cat}` : ''}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (data && Array.isArray(data) && data.length > 0) setItems(data);
-        else setItems(PLACEHOLDER_PROJECTS);
+        if (Array.isArray(data)) setItems(data);
+        else setItems([]);
       })
-      .catch(() => setItems(PLACEHOLDER_PROJECTS))
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [cat]);
 
