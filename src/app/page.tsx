@@ -22,7 +22,7 @@ export default async function HomePage() {
     slug: p.slug,
     category: CATEGORY_LABELS[p.category] ?? p.category,
     title: p.title,
-    thumbnail: p.thumbnail,
+    thumbnail: p.images?.[0] ?? p.thumbnail, // slider pakai cover image, bukan thumbnail card
   }));
 
   return (

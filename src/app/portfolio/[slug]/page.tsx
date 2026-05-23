@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getProjectBySlug, getProjectsByCategory } from '@/lib/db';
-import type { Project, ProjectCategory } from '@/types';
+import { getProjectBySlug, getProjectsByCategory, getCategoryLabel } from '@/lib/db';
+import type { Project } from '@/types';
 import CoverSlider from './CoverSlider';
 import styles from './page.module.css';
 
@@ -26,15 +26,6 @@ function getToolConfig(tool: string) {
   // All monochrome — gray on dark
   return { label, bg: '#1c1c1c', color: '#787878' };
 }
-
-/* ── Category label map ───────────────────────────────────── */
-const CATEGORY_LABELS: Record<ProjectCategory, string> = {
-  insta_pack: 'Instagram Pack',
-  logo:       'Logo Design',
-  poster:     'Poster',
-  printing:   'Printing Design',
-  ui_design:  'UI Design',
-};
 
 /* ── Placeholder data (shown when Supabase is not connected) ─ */
 const PLACEHOLDER: Project = {
@@ -87,11 +78,12 @@ export default async function ProjectPage({
   }
 
   if (project.id !== 'placeholder') {
-    const all = await getProjectsByCategory(project.category as ProjectCategory, 4);
+    const all = await getProjectsByCategory(project.category, 4);
     related = all.filter(p => p.id !== project!.id).slice(0, 3);
   }
 
-  const catLabel = CATEGORY_LABELS[project.category as ProjectCategory] ?? project.category;
+  // Fetch label kategori dari DB (bukan hardcoded map)
+  const catLabel = await getCategoryLabel(project.category);
 
   return (
     <div className={styles.page}>

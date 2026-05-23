@@ -1,4 +1,4 @@
-import { getSupabase } from './supabase';
+import { getSupabase, getSupabaseAdmin } from './supabase';
 import type { Project, Source, ProjectCategory, SourceCategory } from '@/types';
 
 // ─── PROJECTS ────────────────────────────────────────────
@@ -54,6 +54,27 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
 
   if (error) { console.error('getProjectBySlug error:', error); return null; }
   return data as Project;
+}
+
+// ─── CATEGORIES ─────────────────────────────────────────
+
+/** Ambil label kategori dari DB berdasarkan value-nya.
+ *  Fallback: kembalikan value itu sendiri (dengan underscore diganti spasi, title-case). */
+export async function getCategoryLabel(value: string): Promise<string> {
+  const db = getSupabaseAdmin();
+  if (!db) return toTitleCase(value);
+
+  const { data } = await db
+    .from('project_categories')
+    .select('label')
+    .eq('value', value)
+    .single();
+
+  return data?.label ?? toTitleCase(value);
+}
+
+function toTitleCase(value: string): string {
+  return value.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // ─── SOURCES ────────────────────────────────────────────
