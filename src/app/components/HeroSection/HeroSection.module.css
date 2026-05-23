@@ -17,8 +17,8 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  pointer-events: none;
-  z-index: 2;
+  pointer-events: none;  /* klik tetap tembus ke button di bawahnya */
+  z-index: 10;           /* di atas content (z-index:3) tapi cta tetap z-index:100 */
 }
 
 .content {
