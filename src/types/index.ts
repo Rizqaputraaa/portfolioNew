@@ -24,6 +24,7 @@ export interface Project {
   slug: string;
   category: ProjectCategory;
   client?: string;              // client / brand name
+  project_date?: string | null; // tanggal project (YYYY-MM-DD)
   thumbnail: string | null;
   images: string[];             // cover images — up to 5, used in the top slider
   tools: string[];

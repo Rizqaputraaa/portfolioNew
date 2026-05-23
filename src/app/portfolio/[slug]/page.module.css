@@ -324,6 +324,7 @@
   font-size: 15px;
   line-height: 1.8;
   color: var(--gray);
+  white-space: pre-wrap;
 }
 
 /* ── Browse More ── */

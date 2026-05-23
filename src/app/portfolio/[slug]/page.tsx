@@ -120,6 +120,12 @@ export default async function ProjectPage({
                 <span className={styles.metaLabel}>Category</span>
                 {catLabel}
               </span>
+              {project.project_date && (
+                <span className={styles.metaItem}>
+                  <span className={styles.metaLabel}>Date</span>
+                  {new Date(project.project_date).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' })}
+                </span>
+              )}
             </div>
 
             {project.description && (

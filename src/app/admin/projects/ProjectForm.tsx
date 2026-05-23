@@ -26,6 +26,7 @@ type FormData = {
   slug: string;
   category: ProjectCategory;
   client: string;
+  project_date: string;
   description: string;
   tools: string[];
   images: string[];
@@ -49,6 +50,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
         slug: project?.slug ?? '',
         category: project?.category ?? 'logo',
         client: project?.client ?? '',
+        project_date: project?.project_date ?? '',
         description: project?.description ?? '',
         tools: project?.tools ?? [],
         images: project?.images ?? [],
@@ -59,17 +61,10 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       };
     }
 
-    // New project: load draft dari localStorage kalau ada
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        try { return JSON.parse(saved); } catch { /* ignore */ }
-      }
-    }
-
+    // New project: selalu mulai dari form kosong
     return {
       title: '', slug: '', category: 'logo', client: '',
-      description: '', tools: [], images: [], thumbnail: '',
+      project_date: '', description: '', tools: [], images: [], thumbnail: '',
       sections: [], is_new: false, published: false,
     };
   };
@@ -150,6 +145,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       slug: form.slug,
       category: form.category,
       client: form.client || undefined,
+      project_date: form.project_date || null,
       description: form.description || null,
       tools: form.tools,
       images: form.images,
@@ -234,6 +230,17 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             value={form.client}
             onChange={(e) => setForm((prev) => ({ ...prev, client: e.target.value }))}
             placeholder="Client / brand name"
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="pf-date">Tanggal Project</label>
+          <input
+            id="pf-date"
+            className={styles.input}
+            type="date"
+            value={form.project_date}
+            onChange={(e) => setForm((prev) => ({ ...prev, project_date: e.target.value }))}
           />
         </div>
       </div>

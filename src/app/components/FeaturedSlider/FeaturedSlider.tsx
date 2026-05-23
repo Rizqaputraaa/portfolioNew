@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './FeaturedSlider.module.css';
@@ -31,6 +31,7 @@ function Placeholder({ dim = `${COVER_W} × ${COVER_H}` }: { dim?: string }) {
 export default function FeaturedSlider({ slides = [] }: FeaturedSliderProps) {
   const [current, setCurrent] = useState(0);
   const [animDir, setAnimDir] = useState<null | 'left' | 'right'>(null);
+  const dragStartX = useRef<number | null>(null);
 
   if (slides.length === 0) return null;
 
@@ -47,6 +48,14 @@ export default function FeaturedSlider({ slides = [] }: FeaturedSliderProps) {
     }, 320);
   };
 
+  const handleDragStart = (x: number) => { dragStartX.current = x; };
+  const handleDragEnd = (x: number) => {
+    if (dragStartX.current === null) return;
+    const diff = dragStartX.current - x;
+    if (Math.abs(diff) > 50) go(diff > 0 ? 'right' : 'left');
+    dragStartX.current = null;
+  };
+
   const prevIdx = (current - 1 + slides.length) % slides.length;
   const nextIdx = (current + 1) % slides.length;
 
@@ -57,7 +66,15 @@ export default function FeaturedSlider({ slides = [] }: FeaturedSliderProps) {
   );
 
   return (
-    <section className={styles.section} id="featured">
+    <section
+      className={styles.section}
+      id="featured"
+      onTouchStart={e => handleDragStart(e.touches[0].clientX)}
+      onTouchEnd={e => handleDragEnd(e.changedTouches[0].clientX)}
+      onMouseDown={e => handleDragStart(e.clientX)}
+      onMouseUp={e => handleDragEnd(e.clientX)}
+      style={{ cursor: 'grab' }}
+    >
       <div
         className={`${styles.track} ${
           animDir === 'right' ? styles.shiftLeft :

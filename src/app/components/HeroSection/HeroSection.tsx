@@ -20,9 +20,15 @@ export default function HeroSection() {
             Built by someone who refuses to pick just one lane.<br />
             Design + Code + Art. All in one person.
           </p>
-          <Link href="/portfolio" className={styles.cta} id="hero-cta">
+          <a
+            href="https://www.behance.net/gallery/243903401/PORTFOLIO-2026"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.cta}
+            id="hero-cta"
+          >
             VIEW MY CRISIS
-          </Link>
+          </a>
         </div>
       </div>
     </section>

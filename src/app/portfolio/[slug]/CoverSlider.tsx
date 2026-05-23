@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import Image from 'next/image';
 import styles from './page.module.css';
 
@@ -16,6 +16,7 @@ interface Props {
 
 export default function CoverSlider({ images, title }: Props) {
   const [current, setCurrent] = useState(0);
+  const dragStartX = useRef<number | null>(null);
 
   // If no real images, show 5 gray placeholder slots
   const isEmpty = images.length === 0;
@@ -24,8 +25,24 @@ export default function CoverSlider({ images, title }: Props) {
   const prev = () => setCurrent(i => (i - 1 + total) % total);
   const next = () => setCurrent(i => (i + 1) % total);
 
+  // Touch / mouse drag handlers
+  const handleDragStart = (x: number) => { dragStartX.current = x; };
+  const handleDragEnd = (x: number) => {
+    if (dragStartX.current === null) return;
+    const diff = dragStartX.current - x;
+    if (Math.abs(diff) > 50) diff > 0 ? next() : prev();
+    dragStartX.current = null;
+  };
+
   return (
-    <div className={styles.slider}>
+    <div
+      className={styles.slider}
+      onTouchStart={e => handleDragStart(e.touches[0].clientX)}
+      onTouchEnd={e => handleDragEnd(e.changedTouches[0].clientX)}
+      onMouseDown={e => handleDragStart(e.clientX)}
+      onMouseUp={e => handleDragEnd(e.clientX)}
+      style={{ cursor: total > 1 ? 'grab' : 'default' }}
+    >
       {/* Slides */}
       <div className={styles.sliderTrack}>
         {isEmpty
