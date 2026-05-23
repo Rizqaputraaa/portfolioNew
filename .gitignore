@@ -34,3 +34,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# design files — jangan commit file PSD/AI/PNG besar
+*.psd
+*.ai
+UI/
