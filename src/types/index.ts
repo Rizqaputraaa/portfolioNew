@@ -1,9 +1,5 @@
-export type ProjectCategory =
-  | 'insta_pack'
-  | 'logo'
-  | 'poster'
-  | 'printing'
-  | 'ui_design';
+/** Kategori project — dinamis dari DB, bisa ditambah lewat admin */
+export type ProjectCategory = string;
 
 export type SourceCategory =
   | 'mockup'

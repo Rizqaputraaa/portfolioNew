@@ -6,8 +6,9 @@ import { useAdminAuth } from './useAdminAuth';
 import styles from './layout.module.css';
 
 const NAV_LINKS = [
-  { href: '/admin/projects', label: 'Projects', icon: '◈' },
-  { href: '/admin/sources', label: 'Sources', icon: '◇' },
+  { href: '/admin/projects',   label: 'Projects',   icon: '◈' },
+  { href: '/admin/sources',    label: 'Sources',    icon: '◇' },
+  { href: '/admin/categories', label: 'Kategori',   icon: '◉' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

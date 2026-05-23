@@ -6,16 +6,9 @@ import Link from 'next/link';
 import Image from 'next/image';
 import styles from './page.module.css';
 
-type Category = 'all' | 'insta_pack' | 'logo' | 'poster' | 'printing' | 'ui_design';
+interface TabItem { label: string; value: string; }
 
-const TABS: { label: string; value: Category }[] = [
-  { label: 'ALL',            value: 'all' },
-  { label: 'INSTA PACK',     value: 'insta_pack' },
-  { label: 'LOGO',           value: 'logo' },
-  { label: 'POSTER',         value: 'poster' },
-  { label: 'PRINTING DESIGN',value: 'printing' },
-  { label: 'UI DESIGN',      value: 'ui_design' },
-];
+const ALL_TAB: TabItem = { label: 'ALL', value: 'all' };
 
 interface ProjectItem {
   id: string; slug: string; title: string; category: string;
@@ -33,18 +26,31 @@ const PER_PAGE = 9;
 
 function PortfolioInner() {
   const searchParams = useSearchParams();
-  const initCat = (searchParams.get('cat') ?? 'all') as Category;
+  const initCat = searchParams.get('cat') ?? 'all';
 
-  const [cat, setCat]       = useState<Category>(initCat);
+  const [cat, setCat]       = useState<string>(initCat);
+  const [tabs, setTabs]     = useState<TabItem[]>([ALL_TAB]);
   const [page, setPage]     = useState(1);
   const [items, setItems]   = useState<ProjectItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [animKey, setAnimKey] = useState(0);
   const mounted = useRef(false);
 
+  // Fetch kategori dari DB untuk tab filter
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: { label: string; value: string }[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setTabs([ALL_TAB, ...data.map(c => ({ label: c.label.toUpperCase(), value: c.value }))]);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Sync URL cat param → tab on navigation from footer links
   useEffect(() => {
-    const urlCat = (searchParams.get('cat') ?? 'all') as Category;
+    const urlCat = searchParams.get('cat') ?? 'all';
     if (urlCat !== cat) setCat(urlCat);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -78,7 +84,7 @@ function PortfolioInner() {
 
       {/* ── Category tabs ── */}
       <div className={styles.tabs}>
-        {TABS.map(t => (
+        {tabs.map(t => (
           <button
             key={t.value}
             className={`${styles.tab} ${cat === t.value ? styles.tabActive : ''}`}

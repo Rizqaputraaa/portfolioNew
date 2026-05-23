@@ -3,11 +3,11 @@
 import { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { adminCreateProject, adminUpdateProject } from '@/lib/admin-db';
-import type { Project, ProjectCategory, ProjectSection } from '@/types';
+import type { Project, ProjectSection } from '@/types';
 import ImageUpload from '../ImageUpload';
 import styles from '../admin.module.css';
 
-const CATEGORIES: ProjectCategory[] = ['insta_pack', 'logo', 'poster', 'printing', 'ui_design'];
+interface CategoryOption { label: string; value: string; }
 const TOOLS = [
   'photoshop', 'illustrator', 'figma', 'after_effects', 'premiere_pro',
   'lightroom', 'indesign', 'blender', 'cinema4d',
@@ -24,7 +24,7 @@ interface ProjectFormProps {
 type FormData = {
   title: string;
   slug: string;
-  category: ProjectCategory;
+  category: string;
   client: string;
   project_date: string;
   description: string;
@@ -70,10 +70,30 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   };
 
   const [form, setForm] = useState<FormData>(getInitialForm);
+  const [categories, setCategories] = useState<CategoryOption[]>([]);
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+
+  // Fetch kategori dari DB
+  useEffect(() => {
+    fetch('/api/categories')
+      .then(r => r.ok ? r.json() : [])
+      .then((data: CategoryOption[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setCategories(data);
+          // Kalau form.category belum ada di list, set ke kategori pertama
+          setForm(prev => ({
+            ...prev,
+            category: data.some(c => c.value === prev.category)
+              ? prev.category
+              : data[0].value,
+          }));
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Auto-save ke localStorage setiap kali form berubah
   useEffect(() => {
@@ -208,15 +228,26 @@ export default function ProjectForm({ project }: ProjectFormProps) {
 
       <div className={styles.formRow}>
         <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="pf-category">Category *</label>
+          <label className={styles.label} htmlFor="pf-category">
+            Category *
+            <a
+              href="/admin/categories"
+              style={{ marginLeft: 8, fontSize: 11, color: 'var(--orange)', textDecoration: 'none', fontWeight: 400 }}
+            >
+              + Kelola Kategori
+            </a>
+          </label>
           <select
             id="pf-category"
             className={styles.select}
             value={form.category}
-            onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value as ProjectCategory }))}
+            onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
           >
-            {CATEGORIES.map((c) => (
-              <option key={c} value={c}>{c}</option>
+            {categories.length === 0 && (
+              <option value="">Loading…</option>
+            )}
+            {categories.map((c) => (
+              <option key={c.value} value={c.value}>{c.label}</option>
             ))}
           </select>
         </div>
