@@ -19,6 +19,7 @@
   align-items: flex-start;
   pointer-events: none;  /* klik tetap tembus ke button di bawahnya */
   z-index: 10;           /* di atas content (z-index:3) tapi cta tetap z-index:100 */
+  overflow: visible;     /* jangan clip canvas di mobile */
 }
 
 .content {
@@ -109,4 +110,11 @@
 
   /* CTA button full-width feeling but contained to text group */
   .cta { padding: 12px 20px; font-size: 10px; }
+
+  /* Pastikan lanyard tetap tampil di mobile — jangan disembunyikan */
+  .lanyardWrap {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
 }
