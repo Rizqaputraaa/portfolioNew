@@ -309,16 +309,25 @@ export default function ProjectForm({ project }: ProjectFormProps) {
         </div>
       </div>
 
+      {/* Thumbnail khusus untuk card di homepage & portfolio */}
       <div className={styles.formGroup}>
-        <label className={styles.label} htmlFor="pf-thumbnail">Thumbnail URL</label>
-        <input
-          id="pf-thumbnail"
-          className={styles.input}
-          type="text"
+        <label className={styles.label}>
+          Thumbnail Card
+          <span style={{ color: 'var(--gray)', fontWeight: 400, marginLeft: 8, fontSize: 11 }}>
+            — ditampilkan di homepage & halaman portfolio (ideal: 1068 × 762 px, rasio 4:3)
+          </span>
+        </label>
+        <ImageUpload
           value={form.thumbnail}
-          onChange={(e) => setForm((prev) => ({ ...prev, thumbnail: e.target.value }))}
-          placeholder="Auto-set to first image if left blank"
+          onChange={(url) => setForm((prev) => ({ ...prev, thumbnail: url }))}
+          folder="projects/thumbnails"
+          label="thumbnail"
         />
+        {!form.thumbnail && form.images[0] && (
+          <p style={{ marginTop: 6, fontSize: 11, color: 'var(--gray)' }}>
+            ⚠️ Jika kosong, otomatis pakai cover image pertama (bisa kepotong)
+          </p>
+        )}
       </div>
 
       {/* Sections */}

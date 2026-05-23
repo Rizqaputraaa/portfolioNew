@@ -24,6 +24,7 @@ type FormData = {
   description: string;
   how_to_use: string;
   images: string[];
+  thumbnail: string;
   section_image: string;
   file_size: string;
   file_type: string;
@@ -47,6 +48,7 @@ export default function SourceForm({ source }: SourceFormProps) {
     description: source?.description ?? '',
     how_to_use: source?.how_to_use ?? '',
     images: source?.images ?? [],
+    thumbnail: source?.thumbnail ?? '',
     section_image: source?.section_image ?? '',
     file_size: source?.file_size ?? '',
     file_type: source?.file_type ?? '',
@@ -117,7 +119,7 @@ export default function SourceForm({ source }: SourceFormProps) {
       description: form.description?.trim() || null,
       how_to_use: form.how_to_use?.trim() || null,
       images: form.images,
-      thumbnail: form.images[0] ?? null,
+      thumbnail: form.thumbnail || form.images[0] || null,
       section_image: form.section_image || null,
       file_size: form.file_size?.trim() || null,
       file_type: form.file_type?.trim() || null,
@@ -232,6 +234,27 @@ export default function SourceForm({ source }: SourceFormProps) {
           onChange={(e) => setForm((prev) => ({ ...prev, how_to_use: e.target.value }))}
           placeholder="Instructions for using this source…"
         />
+      </div>
+
+      {/* Thumbnail khusus untuk card */}
+      <div className={styles.formGroup}>
+        <label className={styles.label}>
+          Thumbnail Card
+          <span style={{ color: 'var(--gray)', fontWeight: 400, marginLeft: 8, fontSize: 11 }}>
+            — ditampilkan di homepage & halaman source (ideal: 1068 × 762 px, rasio 4:3)
+          </span>
+        </label>
+        <ImageUpload
+          value={form.thumbnail}
+          onChange={(url) => setForm((prev) => ({ ...prev, thumbnail: url }))}
+          folder="sources/thumbnails"
+          label="thumbnail"
+        />
+        {!form.thumbnail && form.images[0] && (
+          <p style={{ marginTop: 6, fontSize: 11, color: 'var(--gray)' }}>
+            ⚠️ Jika kosong, otomatis pakai image pertama (bisa kepotong)
+          </p>
+        )}
       </div>
 
       {/* Images */}
