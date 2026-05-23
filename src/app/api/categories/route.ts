@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getSupabase } from '@/lib/supabase';
 import { getSupabaseAdmin } from '@/lib/supabase';
 
-// GET semua kategori
+// GET semua kategori — pakai admin client agar bypass RLS
 export async function GET() {
-  const db = getSupabase();
+  const db = getSupabaseAdmin();
   if (!db) return NextResponse.json([]);
 
   const { data, error } = await db
