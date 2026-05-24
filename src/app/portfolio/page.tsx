@@ -70,9 +70,10 @@ function PortfolioInner() {
       .finally(() => setLoading(false));
   }, [cat]);
 
-  const filtered   = cat === 'all' ? items : items.filter(p => p.category === cat);
-  const totalPages = Math.ceil(filtered.length / PER_PAGE);
-  const visible    = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+  // API sudah filter by category server-side (pakai categories array),
+  // jadi tidak perlu filter ulang di sini
+  const totalPages = Math.ceil(items.length / PER_PAGE);
+  const visible    = items.slice((page - 1) * PER_PAGE, page * PER_PAGE);
 
   return (
     <div className={styles.page}>
