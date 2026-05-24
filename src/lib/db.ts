@@ -27,19 +27,34 @@ export async function getProjectsByCategory(
   const db = getSupabase();
   if (!db) return [];
 
-  // Filter project yang punya kategori ini di dalam array categories
+  // Pakai filter PostgREST 'cs' (contains) untuk TEXT[] column
+  // Format: {value} — ini syntax array literal PostgreSQL
   let query = db
     .from('projects')
     .select('*')
     .eq('published', true)
-    .contains('categories', [category])
+    .filter('categories', 'cs', `{${category}}`)
     .order('created_at', { ascending: false });
 
   if (limit) query = query.limit(limit);
 
   const { data, error } = await query;
-  if (error) { console.error('getProjectsByCategory error:', error); return []; }
-  return data as Project[];
+
+  if (error) {
+    console.error('getProjectsByCategory error:', error);
+    // Fallback: coba filter pakai kolom category lama (single string)
+    let fallback = db
+      .from('projects')
+      .select('*')
+      .eq('published', true)
+      .eq('category', category)
+      .order('created_at', { ascending: false });
+    if (limit) fallback = fallback.limit(limit);
+    const { data: fbData } = await fallback;
+    return (fbData ?? []) as Project[];
+  }
+
+  return (data ?? []) as Project[];
 }
 
 export async function getProjectBySlug(slug: string): Promise<Project | null> {
