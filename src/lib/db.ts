@@ -1,5 +1,5 @@
 import { getSupabase, getSupabaseAdmin } from './supabase';
-import type { Project, Source, ProjectCategory, SourceCategory } from '@/types';
+import type { Project, Source, SourceCategory } from '@/types';
 
 // ─── PROJECTS ────────────────────────────────────────────
 
@@ -21,17 +21,18 @@ export async function getProjects(limit?: number): Promise<Project[]> {
 }
 
 export async function getProjectsByCategory(
-  category: ProjectCategory,
+  category: string,
   limit?: number
 ): Promise<Project[]> {
   const db = getSupabase();
   if (!db) return [];
 
+  // Filter project yang punya kategori ini di dalam array categories
   let query = db
     .from('projects')
     .select('*')
     .eq('published', true)
-    .eq('category', category)
+    .contains('categories', [category])
     .order('created_at', { ascending: false });
 
   if (limit) query = query.limit(limit);
@@ -58,19 +59,29 @@ export async function getProjectBySlug(slug: string): Promise<Project | null> {
 
 // ─── CATEGORIES ─────────────────────────────────────────
 
-/** Ambil label kategori dari DB berdasarkan value-nya.
- *  Fallback: kembalikan value itu sendiri (dengan underscore diganti spasi, title-case). */
+/** Ambil label kategori dari DB berdasarkan value-nya. */
 export async function getCategoryLabel(value: string): Promise<string> {
+  const labels = await getCategoryLabels([value]);
+  return labels[0] ?? toTitleCase(value);
+}
+
+/** Ambil label untuk beberapa kategori sekaligus (batch query). */
+export async function getCategoryLabels(values: string[]): Promise<string[]> {
+  if (values.length === 0) return [];
   const db = getSupabaseAdmin();
-  if (!db) return toTitleCase(value);
+  if (!db) return values.map(toTitleCase);
 
   const { data } = await db
     .from('project_categories')
-    .select('label')
-    .eq('value', value)
-    .single();
+    .select('label, value')
+    .in('value', values);
 
-  return data?.label ?? toTitleCase(value);
+  const map: Record<string, string> = {};
+  (data ?? []).forEach((row: { label: string; value: string }) => {
+    map[row.value] = row.label;
+  });
+
+  return values.map(v => map[v] ?? toTitleCase(v));
 }
 
 function toTitleCase(value: string): string {

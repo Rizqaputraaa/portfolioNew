@@ -17,13 +17,18 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default async function HomePage() {
   const [projects, sources] = await Promise.all([getProjects(6), getSources(3)]);
 
-  const sliderSlides = projects.map(p => ({
-    id: p.id,
-    slug: p.slug,
-    category: CATEGORY_LABELS[p.category] ?? p.category,
-    title: p.title,
-    thumbnail: p.images?.[0] ?? p.thumbnail, // slider pakai cover image, bukan thumbnail card
-  }));
+  const sliderSlides = projects.map(p => {
+    // Pakai categories array (baru) atau fallback ke category lama
+    const cats = p.categories?.length ? p.categories : (p.category ? [p.category] : []);
+    const catDisplay = cats.map(c => CATEGORY_LABELS[c] ?? c.replace(/_/g, ' ').toUpperCase()).join(', ');
+    return {
+      id: p.id,
+      slug: p.slug,
+      category: catDisplay,
+      title: p.title,
+      thumbnail: p.images?.[0] ?? p.thumbnail, // slider pakai cover image
+    };
+  });
 
   return (
     <>

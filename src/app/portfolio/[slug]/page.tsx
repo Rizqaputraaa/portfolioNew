@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { getProjectBySlug, getProjectsByCategory, getCategoryLabel } from '@/lib/db';
+import { getProjectBySlug, getProjectsByCategory, getCategoryLabels } from '@/lib/db';
 import type { Project } from '@/types';
 import CoverSlider from './CoverSlider';
 import styles from './page.module.css';
@@ -33,6 +33,7 @@ const PLACEHOLDER: Project = {
   slug: 'project-01',
   title: 'Instagram Pack BKT',
   category: 'insta_pack',
+  categories: ['insta_pack'],
   client: 'BKT Sneakers',
   thumbnail: null,
   images: [],
@@ -77,13 +78,19 @@ export default async function ProjectPage({
     }
   }
 
+  // Ambil categories dari field baru, fallback ke legacy category
+  const projectCategories = project.categories?.length
+    ? project.categories
+    : (project.category ? [project.category] : []);
+
   if (project.id !== 'placeholder') {
-    const all = await getProjectsByCategory(project.category, 4);
+    // Ambil related project berdasarkan kategori pertama
+    const all = await getProjectsByCategory(projectCategories[0] ?? project.category, 4);
     related = all.filter(p => p.id !== project!.id).slice(0, 3);
   }
 
-  // Fetch label kategori dari DB (bukan hardcoded map)
-  const catLabel = await getCategoryLabel(project.category);
+  // Fetch semua label kategori dari DB sekaligus
+  const catLabels = await getCategoryLabels(projectCategories);
 
   return (
     <div className={styles.page}>
@@ -108,10 +115,14 @@ export default async function ProjectPage({
                   {project.client}
                 </span>
               )}
-              <span className={styles.metaItem}>
-                <span className={styles.metaLabel}>Category</span>
-                {catLabel}
-              </span>
+              {catLabels.length > 0 && (
+                <span className={styles.metaItem}>
+                  <span className={styles.metaLabel}>
+                    {catLabels.length > 1 ? 'Categories' : 'Category'}
+                  </span>
+                  {catLabels.join(', ')}
+                </span>
+              )}
               {project.project_date && (
                 <span className={styles.metaItem}>
                   <span className={styles.metaLabel}>Date</span>

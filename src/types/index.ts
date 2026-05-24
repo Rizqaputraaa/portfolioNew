@@ -18,7 +18,8 @@ export interface Project {
   id: string;
   title: string;
   slug: string;
-  category: ProjectCategory;
+  category: string;             // legacy — tetap ada di DB untuk backward compat
+  categories: string[];         // multi-kategori (array)
   client?: string;              // client / brand name
   project_date?: string | null; // tanggal project (YYYY-MM-DD)
   thumbnail: string | null;

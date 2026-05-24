@@ -24,7 +24,7 @@ interface ProjectFormProps {
 type FormData = {
   title: string;
   slug: string;
-  category: string;
+  categories: string[];
   client: string;
   project_date: string;
   description: string;
@@ -48,7 +48,10 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       return {
         title: project?.title ?? '',
         slug: project?.slug ?? '',
-        category: project?.category ?? 'logo',
+        // Backward compat: kalau categories kosong, pakai category lama
+        categories: project?.categories?.length
+          ? project.categories
+          : (project?.category ? [project.category] : []),
         client: project?.client ?? '',
         project_date: project?.project_date ?? '',
         description: project?.description ?? '',
@@ -63,7 +66,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
 
     // New project: selalu mulai dari form kosong
     return {
-      title: '', slug: '', category: 'logo', client: '',
+      title: '', slug: '', categories: [], client: '',
       project_date: '', description: '', tools: [], images: [], thumbnail: '',
       sections: [], is_new: false, published: false,
     };
@@ -76,21 +79,12 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  // Fetch kategori dari DB
+  // Fetch daftar kategori dari DB
   useEffect(() => {
     fetch('/api/categories')
       .then(r => r.ok ? r.json() : [])
       .then((data: CategoryOption[]) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setCategories(data);
-          // Kalau form.category belum ada di list, set ke kategori pertama
-          setForm(prev => ({
-            ...prev,
-            category: data.some(c => c.value === prev.category)
-              ? prev.category
-              : data[0].value,
-          }));
-        }
+        if (Array.isArray(data)) setCategories(data);
       })
       .catch(() => {});
   }, []);
@@ -108,6 +102,15 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       ...prev,
       title,
       slug: isEdit ? prev.slug : generateSlug(title),
+    }));
+  };
+
+  const toggleCategory = (value: string) => {
+    setForm((prev) => ({
+      ...prev,
+      categories: prev.categories.includes(value)
+        ? prev.categories.filter((c) => c !== value)
+        : [...prev.categories, value],
     }));
   };
 
@@ -163,7 +166,8 @@ export default function ProjectForm({ project }: ProjectFormProps) {
     const payload = {
       title: form.title,
       slug: form.slug,
-      category: form.category,
+      categories: form.categories,
+      category: form.categories[0] ?? '',   // legacy column tetap diisi dengan kategori pertama
       client: form.client || undefined,
       project_date: form.project_date || null,
       description: form.description || null,
@@ -227,8 +231,8 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       </div>
 
       <div className={styles.formRow}>
-        <div className={styles.formGroup}>
-          <label className={styles.label} htmlFor="pf-category">
+        <div className={styles.formGroup} style={{ gridColumn: '1 / -1' }}>
+          <label className={styles.label}>
             Category *
             <a
               href="/admin/categories"
@@ -237,19 +241,25 @@ export default function ProjectForm({ project }: ProjectFormProps) {
               + Kelola Kategori
             </a>
           </label>
-          <select
-            id="pf-category"
-            className={styles.select}
-            value={form.category}
-            onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-          >
-            {categories.length === 0 && (
-              <option value="">Loading…</option>
-            )}
-            {categories.map((c) => (
-              <option key={c.value} value={c.value}>{c.label}</option>
-            ))}
-          </select>
+          {categories.length === 0 ? (
+            <p style={{ fontSize: 12, color: 'var(--gray)' }}>Memuat kategori…</p>
+          ) : (
+            <div className={styles.checkboxGroup}>
+              {categories.map((c) => (
+                <label key={c.value} className={styles.checkboxLabel}>
+                  <input
+                    type="checkbox"
+                    checked={form.categories.includes(c.value)}
+                    onChange={() => toggleCategory(c.value)}
+                  />
+                  {c.label}
+                </label>
+              ))}
+            </div>
+          )}
+          {form.categories.length === 0 && (
+            <p style={{ marginTop: 6, fontSize: 11, color: '#e05' }}>Pilih minimal 1 kategori</p>
+          )}
         </div>
 
         <div className={styles.formGroup}>
