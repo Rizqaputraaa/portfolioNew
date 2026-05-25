@@ -24,7 +24,9 @@
 
 .content {
   position: relative;
-  z-index: 3;
+  /* z-index sengaja dihapus — kalau ada z-index di sini, div ini jadi
+     stacking context sendiri, sehingga z-index button di dalamnya tidak
+     bisa melampaui canvas lanyardWrap (z-index 10) di level hero */
   padding: 0 60px 60px;
   max-width: 1280px;
   margin: 0 auto;
