@@ -11,5 +11,8 @@
 .wrapper canvas {
   width: 100% !important;
   height: 100% !important;
-  pointer-events: auto !important;
+  /* pointer-events: none — R3F pakai document.body sebagai eventSource,
+     jadi canvas tidak perlu menerima events sendiri.
+     Ini memungkinkan button di belakang canvas tetap bisa diklik. */
+  pointer-events: none !important;
 }

@@ -94,6 +94,10 @@ export default function Lanyard3D({
         dpr={cfg.dpr}
         gl={{ alpha: true }}
         onCreated={({ gl }) => gl.setClearColor(new THREE.Color(0x000000), 0)}
+        // Pakai document.body sebagai event source supaya canvas bisa pointer-events:none
+        // tapi dragging tetap jalan karena R3F raycast dari koordinat body
+        eventSource={typeof document !== 'undefined' ? document.body : undefined}
+        eventPrefix="client"
       >
         <ambientLight intensity={Math.PI} />
         <Suspense fallback={null}>
