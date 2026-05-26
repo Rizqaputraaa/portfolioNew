@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getProjectBySlug, getProjectsByCategory, getCategoryLabels } from '@/lib/db';
 import type { Project } from '@/types';
 import CoverSlider from './CoverSlider';
+import SectionImagesClient from './SectionImagesClient';
 import styles from './page.module.css';
 
 /* ── Tool icon config — monochrome palette ────────────────── */
@@ -161,34 +162,12 @@ export default async function ProjectPage({
         </div>
       </section>
 
-      {/* ── Image sections ── */}
+      {/* ── Image sections (client component: nama di atas gambar, click-to-lightbox) ── */}
       {project.sections && project.sections.length > 0 && (
-        <div className={styles.sectionsWrapper}>
-          {project.sections.map((sec, idx) => (
-            <section key={idx} className={styles.contentSection}>
-              {/* Large image — only show if image exists */}
-              {sec.image && (
-                <div className={styles.sectionImageWrap}>
-                  <Image
-                    src={sec.image}
-                    alt={`${project!.title} section ${idx + 1}`}
-                    fill
-                    className={styles.sectionImage}
-                    sizes="(max-width: 768px) 100vw, 90vw"
-                  />
-                </div>
-              )}
-
-              {/* Caption */}
-              <div className={styles.sectionCaption}>
-                <span className={styles.sectionNum}>
-                  {sec.name ? sec.name.toUpperCase() : `Section ${String(idx + 1).padStart(2, '0')}`}
-                </span>
-                <p className={styles.sectionDesc}>{sec.description}</p>
-              </div>
-            </section>
-          ))}
-        </div>
+        <SectionImagesClient
+          sections={project.sections}
+          projectTitle={project.title}
+        />
       )}
 
       {/* ── Browse more — only show if related projects exist ── */}

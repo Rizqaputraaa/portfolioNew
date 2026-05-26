@@ -275,6 +275,11 @@
   border-bottom: none;
 }
 
+/* Nama section di atas gambar */
+.sectionHeader {
+  margin-bottom: 16px;
+}
+
 .sectionImageWrap {
   position: relative;
   width: 100%;
@@ -285,8 +290,60 @@
   margin-bottom: 28px;
 }
 
+/* Clickable image hover effect */
+.clickable {
+  cursor: zoom-in;
+  transition: opacity 0.15s;
+}
+.clickable:hover { opacity: 0.88; }
+.clickable:hover .imageZoomHint { opacity: 1; }
+
+/* Zoom hint icon overlay */
+.imageZoomHint {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.15s;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
 .sectionImage {
   object-fit: cover;
+}
+
+/* Zoom hint di cover slider */
+.coverZoomHint {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 36px;
+  height: 36px;
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  opacity: 0;
+  transition: opacity 0.2s;
+  pointer-events: none;
+  backdrop-filter: blur(4px);
+}
+
+.slide:hover .coverZoomHint {
+  opacity: 1;
 }
 
 .sectionImagePlaceholder {

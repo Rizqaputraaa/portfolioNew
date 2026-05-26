@@ -21,13 +21,14 @@ export default function HeroSection() {
             Design + Code + Art. All in one person.
           </p>
           <a
-            href="https://www.behance.net/gallery/243903401/PORTFOLIO-2026"
+            href="/cv-rizqaputra.pdf"
             target="_blank"
             rel="noopener noreferrer"
+            download="CV Rizqa Putra Ananda.pdf"
             className={styles.cta}
             id="hero-cta"
           >
-            VIEW MY CRISIS
+            SEE MY CV
           </a>
         </div>
       </div>
