@@ -32,7 +32,6 @@ type FormData = {
   images: string[];
   thumbnail: string;
   sections: ProjectSection[];
-  is_new: boolean;
   published: boolean;
 };
 
@@ -59,7 +58,6 @@ export default function ProjectForm({ project }: ProjectFormProps) {
         images: project?.images ?? [],
         thumbnail: project?.thumbnail ?? '',
         sections: project?.sections ?? [],
-        is_new: project?.is_new ?? false,
         published: project?.published ?? false,
       };
     }
@@ -68,7 +66,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
     return {
       title: '', slug: '', categories: [], client: '',
       project_date: '', description: '', tools: [], images: [], thumbnail: '',
-      sections: [], is_new: false, published: false,
+      sections: [], published: false,
     };
   };
 
@@ -175,7 +173,6 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       images: form.images,
       thumbnail: form.thumbnail || null,
       sections: form.sections.length > 0 ? form.sections : undefined,
-      is_new: form.is_new,
       published: form.published,
     };
 
@@ -429,14 +426,9 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       </div>
 
       <div className={styles.checkboxGroup}>
-        <label className={styles.checkboxLabel}>
-          <input
-            type="checkbox"
-            checked={form.is_new}
-            onChange={(e) => setForm((prev) => ({ ...prev, is_new: e.target.checked }))}
-          />
-          Mark as New
-        </label>
+        <p style={{ fontSize: 12, color: 'var(--gray)', margin: 0, paddingTop: 2 }}>
+          🕐 Badge &quot;NEW&quot; otomatis tampil selama 30 hari sejak project dibuat — tidak perlu diatur manual.
+        </p>
         <label className={styles.checkboxLabel}>
           <input
             type="checkbox"

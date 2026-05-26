@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { isNewItem } from '@/lib/utils';
 import styles from './page.module.css';
 
 type Category = 'all' | 'mockup' | 'overlay_texture' | 'script' | 'psd_effect';
@@ -18,7 +19,7 @@ const TABS: { label: string; value: Category }[] = [
 
 interface SourceItem {
   id: string; slug: string; title: string; category: string;
-  thumbnail: string | null; is_new?: boolean;
+  thumbnail: string | null; created_at?: string;
   drive_url?: string | null; download_url?: string | null; price?: string | null;
 }
 
@@ -26,7 +27,7 @@ const PLACEHOLDER_SOURCES: SourceItem[] = Array.from({ length: 9 }, (_, i) => ({
   id: `s${i + 1}`, slug: `source-0${i + 1}`,
   title: `Source ${String(i + 1).padStart(2, '0')}`,
   category: ['mockup', 'overlay_texture', 'script', 'psd_effect'][i % 4],
-  thumbnail: null, is_new: i === 0,
+  thumbnail: null, created_at: new Date().toISOString(),
 }));
 
 const PER_PAGE = 9;
@@ -132,7 +133,7 @@ function SourceInner() {
                     </div>
                     <div className={styles.cardInfo}>
                       <span className={styles.cardName}>{s.title}</span>
-                      {s.is_new && <span className={styles.badgeNew}>NEW</span>}
+                      {isNewItem(s.created_at) && <span className={styles.badgeNew}>NEW</span>}
                     </div>
                   </Link>
                 );

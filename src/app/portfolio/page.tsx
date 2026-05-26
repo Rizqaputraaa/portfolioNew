@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import { isNewItem } from '@/lib/utils';
 import styles from './page.module.css';
 
 interface TabItem { label: string; value: string; }
@@ -12,14 +13,14 @@ const ALL_TAB: TabItem = { label: 'ALL', value: 'all' };
 
 interface ProjectItem {
   id: string; slug: string; title: string; category: string;
-  thumbnail: string | null; is_new: boolean;
+  thumbnail: string | null; created_at: string;
 }
 
 const PLACEHOLDER_PROJECTS: ProjectItem[] = Array.from({ length: 9 }, (_, i) => ({
   id: `p${i + 1}`, slug: `project-0${i + 1}`,
   title: `Project ${String(i + 1).padStart(2, '0')}`,
   category: ['insta_pack', 'logo', 'poster', 'printing', 'ui_design'][i % 5],
-  thumbnail: null, is_new: i === 0,
+  thumbnail: null, created_at: new Date().toISOString(),
 }));
 
 const PER_PAGE = 9;
@@ -119,7 +120,7 @@ function PortfolioInner() {
                   </div>
                   <div className={styles.cardInfo}>
                     <span className={styles.cardName}>{p.title}</span>
-                    {p.is_new && <span className={styles.badgeNew}>NEW</span>}
+                    {isNewItem(p.created_at) && <span className={styles.badgeNew}>NEW</span>}
                   </div>
                 </Link>
               ))

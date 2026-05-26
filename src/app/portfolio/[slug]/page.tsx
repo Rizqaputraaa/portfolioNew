@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
 import { getProjectBySlug, getProjectsByCategory, getCategoryLabels } from '@/lib/db';
+import { isNewItem } from '@/lib/utils';
 import type { Project } from '@/types';
 import CoverSlider from './CoverSlider';
 import SectionImagesClient from './SectionImagesClient';
@@ -106,7 +107,7 @@ export default async function ProjectPage({
 
           {/* Left — title, meta, description */}
           <div className={styles.infoLeft}>
-            {project.is_new && <span className={styles.badge}>NEW</span>}
+            {isNewItem(project.created_at) && <span className={styles.badge}>NEW</span>}
             <h1 className={styles.title}>{project.title}</h1>
 
             <div className={styles.meta}>

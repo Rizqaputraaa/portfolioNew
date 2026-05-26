@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useAdminAuth } from '../useAdminAuth';
 import { adminGetProjects, adminDeleteProject } from '@/lib/admin-db';
+import { isNewItem } from '@/lib/utils';
 import type { Project } from '@/types';
 import styles from '../admin.module.css';
 
@@ -58,7 +59,7 @@ export default function AdminProjectsPage() {
               <tr>
                 <th className={styles.th}>Title</th>
                 <th className={styles.th}>Category</th>
-                <th className={styles.th}>Is New</th>
+                <th className={styles.th}>Badge NEW</th>
                 <th className={styles.th}>Published</th>
                 <th className={styles.th}>Created At</th>
                 <th className={styles.th}>Actions</th>
@@ -72,10 +73,10 @@ export default function AdminProjectsPage() {
                     <span className={styles.badge}>{project.category}</span>
                   </td>
                   <td className={styles.td}>
-                    {project.is_new ? (
-                      <span className={styles.badge}>Yes</span>
+                    {isNewItem(project.created_at) ? (
+                      <span className={styles.badge}>Active</span>
                     ) : (
-                      <span className={`${styles.badge} ${styles.badgeGray}`}>No</span>
+                      <span className={`${styles.badge} ${styles.badgeGray}`}>Expired</span>
                     )}
                   </td>
                   <td className={styles.td}>

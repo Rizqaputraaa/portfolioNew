@@ -1,9 +1,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import type { Project, Source } from '@/types';
+import { isNewItem } from '@/lib/utils';
 import styles from './ProjectCard.module.css';
 
-type CardItem = Partial<Project> & Partial<Source> & { title: string; slug: string; thumbnail?: string | null; is_new?: boolean };
+type CardItem = Partial<Project> & Partial<Source> & { title: string; slug: string; thumbnail?: string | null };
 
 interface ProjectCardProps {
   item: CardItem;
@@ -37,7 +38,7 @@ export default function ProjectCard({ item, basePath = '/portfolio' }: ProjectCa
       </div>
       <div className={styles.info}>
         <span className={styles.name}>{item.title}</span>
-        {item.is_new && <span className={styles.badgeNew}>NEW</span>}
+        {isNewItem(item.created_at) && <span className={styles.badgeNew}>NEW</span>}
       </div>
     </Link>
   );

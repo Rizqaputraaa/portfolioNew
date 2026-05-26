@@ -27,7 +27,7 @@ export interface Project {
   tools: string[];
   description: string | null;
   sections?: ProjectSection[];  // body image+caption blocks
-  is_new: boolean;
+  is_new?: boolean; // deprecated — badge now auto-computed from created_at
   published: boolean;
   created_at: string;
 }
