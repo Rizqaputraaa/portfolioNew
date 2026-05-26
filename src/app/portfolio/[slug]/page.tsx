@@ -107,7 +107,7 @@ export default async function ProjectPage({
 
           {/* Left — title, meta, description */}
           <div className={styles.infoLeft}>
-            {isNewItem(project.created_at) && <span className={styles.badge}>NEW</span>}
+            {isNewItem(project.project_date ?? project.created_at) && <span className={styles.badge}>NEW</span>}
             <h1 className={styles.title}>{project.title}</h1>
 
             <div className={styles.meta}>

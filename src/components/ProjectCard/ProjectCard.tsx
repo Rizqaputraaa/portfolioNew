@@ -38,7 +38,7 @@ export default function ProjectCard({ item, basePath = '/portfolio' }: ProjectCa
       </div>
       <div className={styles.info}>
         <span className={styles.name}>{item.title}</span>
-        {isNewItem(item.created_at) && <span className={styles.badgeNew}>NEW</span>}
+        {isNewItem(item.project_date ?? item.created_at) && <span className={styles.badgeNew}>NEW</span>}
       </div>
     </Link>
   );

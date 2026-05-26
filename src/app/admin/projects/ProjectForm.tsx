@@ -427,7 +427,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
 
       <div className={styles.checkboxGroup}>
         <p style={{ fontSize: 12, color: 'var(--gray)', margin: 0, paddingTop: 2 }}>
-          🕐 Badge &quot;NEW&quot; otomatis tampil selama 30 hari sejak project dibuat — tidak perlu diatur manual.
+          🕐 Badge &quot;NEW&quot; otomatis tampil selama 30 hari sejak tanggal project di atas — tidak perlu diatur manual.
         </p>
         <label className={styles.checkboxLabel}>
           <input

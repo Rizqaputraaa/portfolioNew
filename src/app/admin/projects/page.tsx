@@ -73,7 +73,7 @@ export default function AdminProjectsPage() {
                     <span className={styles.badge}>{project.category}</span>
                   </td>
                   <td className={styles.td}>
-                    {isNewItem(project.created_at) ? (
+                    {isNewItem(project.project_date ?? project.created_at) ? (
                       <span className={styles.badge}>Active</span>
                     ) : (
                       <span className={`${styles.badge} ${styles.badgeGray}`}>Expired</span>
