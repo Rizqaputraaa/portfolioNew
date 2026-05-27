@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { getSourceBySlug, getSourcesByCategory } from '@/lib/db';
 import type { Source, SourceCategory } from '@/types';
 import CoverSlider from './CoverSlider';
+import SourceSectionsClient from './SourceSectionsClient';
 import ShareButton from './ShareButton';
 import styles from './page.module.css';
 
@@ -89,21 +90,6 @@ export default async function SourcePage({
           {source.description && (
             <p className={styles.description}>{source.description}</p>
           )}
-
-          {/* Section image */}
-          <div className={styles.sectionImageWrap}>
-            {source.section_image ? (
-              <Image
-                src={source.section_image}
-                alt={source.title}
-                fill
-                className={styles.sectionImage}
-                sizes="(max-width: 900px) 100vw, 66vw"
-              />
-            ) : (
-              <div className={styles.sectionImagePlaceholder}>IMAGE</div>
-            )}
-          </div>
 
           {/* HOW TO USE */}
           {source.how_to_use && (
@@ -202,6 +188,17 @@ export default async function SourcePage({
           <ShareButton />
         </div>
       </div>
+
+      {/* ── Sections (multi-block with clickable images) ── */}
+      {source.sections && source.sections.length > 0 ? (
+        <SourceSectionsClient sections={source.sections} sourceTitle={source.title} />
+      ) : source.section_image ? (
+        /* Legacy fallback: single section_image */
+        <SourceSectionsClient
+          sections={[{ name: '', image: source.section_image, description: '' }]}
+          sourceTitle={source.title}
+        />
+      ) : null}
 
       {/* ── Browse more ── only show if related sources exist */}
       {related.length > 0 && (

@@ -43,7 +43,8 @@ export interface Source {
   images: string[];
   description: string | null;
   how_to_use: string | null;
-  section_image: string | null;
+  section_image: string | null;  // legacy — single section image
+  sections?: ProjectSection[];   // optional multi-section content blocks
   file_size: string | null;
   file_type: string | null;
   dimensions: string | null;
