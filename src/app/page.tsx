@@ -18,13 +18,19 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default async function HomePage() {
   const [projects, sources] = await Promise.all([getProjects(6), getSources(3)]);
 
-  // Sort projects with active NEW badge to the top
+  // Sort projects with active NEW badge to the top, then by date
   const sortedProjects = [...projects].sort((a, b) => {
     const aIsNew = isNewItem(a.project_date ?? a.created_at);
     const bIsNew = isNewItem(b.project_date ?? b.created_at);
+
+    // Primary sort: NEW badge status
     if (aIsNew && !bIsNew) return -1;
     if (!aIsNew && bIsNew) return 1;
-    return 0;
+
+    // Secondary sort: by creation date (newer first)
+    const aDate = new Date(a.project_date ?? a.created_at).getTime();
+    const bDate = new Date(b.project_date ?? b.created_at).getTime();
+    return bDate - aDate;
   });
 
   const sliderSlides = sortedProjects.map(p => {

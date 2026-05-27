@@ -65,13 +65,19 @@ function PortfolioInner() {
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (Array.isArray(data)) {
-          // Sort projects with active NEW badge to the top
+          // Sort projects with active NEW badge to the top, then by date
           const sorted = [...data].sort((a, b) => {
             const aIsNew = isNewItem(a.project_date ?? a.created_at);
             const bIsNew = isNewItem(b.project_date ?? b.created_at);
+
+            // Primary sort: NEW badge status
             if (aIsNew && !bIsNew) return -1;
             if (!aIsNew && bIsNew) return 1;
-            return 0;
+
+            // Secondary sort: by creation date (newer first)
+            const aDate = new Date(a.project_date ?? a.created_at).getTime();
+            const bDate = new Date(b.project_date ?? b.created_at).getTime();
+            return bDate - aDate;
           });
           setItems(sorted);
         }
