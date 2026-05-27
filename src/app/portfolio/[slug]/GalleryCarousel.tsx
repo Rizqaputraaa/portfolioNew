@@ -86,7 +86,7 @@ export default function GalleryCarousel({ images, title }: Props) {
                 <div
                   key={i}
                   className={`${styles.card} ${active ? styles.cardActive : ''}`}
-                  style={{ width: cardW, height: cardW }}
+                  style={{ width: cardW, height: Math.round(cardW * 1.25) }}
                   onClick={() => {
                     if (dragged.current) return;
                     if (active) setLb(src);

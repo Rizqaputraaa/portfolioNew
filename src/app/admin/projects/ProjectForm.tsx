@@ -465,6 +465,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
                   Remove
                 </button>
               </div>
+              <p style={{ fontSize: 12, color: '#999', marginBottom: 12 }}>Ukuran: 1080 × 1350 px (portrait Instagram)</p>
               <ImageUpload
                 value={url}
                 onChange={(newUrl) => setForm((prev) => ({
