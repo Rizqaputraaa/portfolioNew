@@ -21,12 +21,14 @@ export interface Project {
   category: string;             // legacy — tetap ada di DB untuk backward compat
   categories: string[];         // multi-kategori (array)
   client?: string;              // client / brand name
+  client_ig?: string | null;    // instagram handle/URL of client (optional)
   project_date?: string | null; // tanggal project (YYYY-MM-DD)
   thumbnail: string | null;
   images: string[];             // cover images — up to 5, used in the top slider
   tools: string[];
   description: string | null;
   sections?: ProjectSection[];  // body image+caption blocks
+  gallery?: string[];           // optional gallery carousel images
   is_new?: boolean; // deprecated — badge now auto-computed from created_at
   published: boolean;
   created_at: string;

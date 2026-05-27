@@ -1,0 +1,160 @@
+/* ══════════════════════════════════════
+   GALLERY CAROUSEL
+══════════════════════════════════════ */
+
+.section {
+  border-top: 1px solid var(--gray-light);
+  padding: 60px 0 40px;
+}
+
+/* Header row */
+.header {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+}
+
+.label {
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--white);
+}
+
+.counter {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  color: var(--gray);
+}
+
+/* Stage — clips the overflow on both sides */
+.stage {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  padding: 20px 0 28px;
+  cursor: grab;
+}
+.stage:active { cursor: grabbing; }
+
+/* Track — flex row that slides via translateX */
+.track {
+  display: flex;
+  gap: 20px;
+  transition: transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  will-change: transform;
+  /* prevent text selection while dragging */
+  user-select: none;
+}
+
+/* Individual card */
+.card {
+  flex-shrink: 0;
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg-3);
+  border: 1px solid var(--gray-light);
+  cursor: pointer;
+  transition:
+    transform  0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity    0.45s,
+    border-color 0.2s;
+  /* Non-active: scaled down + dimmed */
+  transform: scale(0.84);
+  opacity: 0.4;
+}
+
+.cardActive {
+  transform: scale(1);
+  opacity: 1;
+  border-color: rgba(255, 255, 255, 0.16);
+  cursor: zoom-in;
+}
+
+.img {
+  object-fit: cover;
+  pointer-events: none;
+}
+
+/* Zoom icon on active card */
+.zoomHint {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+/* Prev / Next buttons */
+.btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  background: rgba(12, 12, 12, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  backdrop-filter: blur(8px);
+}
+.btn:hover {
+  background: rgba(30, 30, 30, 0.95);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+.btnPrev { left: 24px; }
+.btnNext { right: 24px; }
+
+/* Dots */
+.dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 40px;
+  flex-wrap: wrap;
+}
+
+.dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.22);
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.2s, transform 0.2s;
+}
+.dotActive {
+  background: var(--white);
+  transform: scale(1.3);
+}
+
+/* ── Responsive ── */
+@media (max-width: 640px) {
+  .header { padding: 0 20px; }
+  .btnPrev { left: 10px; }
+  .btnNext { right: 10px; }
+  .section { padding: 40px 0 32px; }
+}

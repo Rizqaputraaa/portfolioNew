@@ -6,6 +6,7 @@ import { isNewItem } from '@/lib/utils';
 import type { Project } from '@/types';
 import CoverSlider from './CoverSlider';
 import SectionImagesClient from './SectionImagesClient';
+import GalleryCarousel from './GalleryCarousel';
 import styles from './page.module.css';
 
 /* ── Tool icon config — monochrome palette ────────────────── */
@@ -25,8 +26,26 @@ const TOOL_LABELS: Record<string, string> = {
 function getToolConfig(tool: string) {
   const key = tool.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
   const label = TOOL_LABELS[key] ?? tool.slice(0, 2).toUpperCase();
-  // All monochrome — gray on dark
   return { label, bg: '#1c1c1c', color: '#787878' };
+}
+
+/* ── IG client helper ─────────────────────────────────────── */
+function parseClientIg(raw: string): { href: string; handle: string } {
+  const trimmed = raw.trim();
+  // Full URL → extract username
+  const urlMatch = trimmed.match(/instagram\.com\/([^/?#]+)/i);
+  if (urlMatch) {
+    return {
+      href: `https://www.instagram.com/${urlMatch[1]}/`,
+      handle: `@${urlMatch[1]}`,
+    };
+  }
+  // @handle or plain handle
+  const handle = trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
+  return {
+    href: `https://www.instagram.com/${handle}/`,
+    handle: `@${handle}`,
+  };
 }
 
 /* ── Placeholder data (shown when Supabase is not connected) ─ */
@@ -114,7 +133,26 @@ export default async function ProjectPage({
               {project.client && (
                 <span className={styles.metaItem}>
                   <span className={styles.metaLabel}>Client</span>
-                  {project.client}
+                  <span className={styles.metaClientRow}>
+                    {project.client}
+                    {project.client_ig && (() => {
+                      const ig = parseClientIg(project.client_ig);
+                      return (
+                        <a
+                          href={ig.href}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={styles.metaIgLink}
+                          title={`Instagram ${ig.handle}`}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324zM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8zm6.406-11.845a1.44 1.44 0 1 0 0 2.881 1.44 1.44 0 0 0 0-2.881z"/>
+                          </svg>
+                          {ig.handle}
+                        </a>
+                      );
+                    })()}
+                  </span>
                 </span>
               )}
               {catLabels.length > 0 && (
@@ -169,6 +207,11 @@ export default async function ProjectPage({
           sections={project.sections}
           projectTitle={project.title}
         />
+      )}
+
+      {/* ── Gallery carousel (optional) ── */}
+      {project.gallery && project.gallery.length > 0 && (
+        <GalleryCarousel images={project.gallery} title={project.title} />
       )}
 
       {/* ── Browse more — only show if related projects exist ── */}

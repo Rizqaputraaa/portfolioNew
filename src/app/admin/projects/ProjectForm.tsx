@@ -26,12 +26,14 @@ type FormData = {
   slug: string;
   categories: string[];
   client: string;
+  client_ig: string;
   project_date: string;
   description: string;
   tools: string[];
   images: string[];
   thumbnail: string;
   sections: ProjectSection[];
+  gallery: string[];
   published: boolean;
 };
 
@@ -52,21 +54,23 @@ export default function ProjectForm({ project }: ProjectFormProps) {
           ? project.categories
           : (project?.category ? [project.category] : []),
         client: project?.client ?? '',
+        client_ig: project?.client_ig ?? '',
         project_date: project?.project_date ?? '',
         description: project?.description ?? '',
         tools: project?.tools ?? [],
         images: project?.images ?? [],
         thumbnail: project?.thumbnail ?? '',
         sections: project?.sections ?? [],
+        gallery: project?.gallery ?? [],
         published: project?.published ?? false,
       };
     }
 
     // New project: selalu mulai dari form kosong
     return {
-      title: '', slug: '', categories: [], client: '',
+      title: '', slug: '', categories: [], client: '', client_ig: '',
       project_date: '', description: '', tools: [], images: [], thumbnail: '',
-      sections: [], published: false,
+      sections: [], gallery: [], published: false,
     };
   };
 
@@ -167,12 +171,14 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       categories: form.categories,
       category: form.categories[0] ?? '',   // legacy column tetap diisi dengan kategori pertama
       client: form.client || undefined,
+      client_ig: form.client_ig || null,
       project_date: form.project_date || null,
       description: form.description || null,
       tools: form.tools,
       images: form.images,
       thumbnail: form.thumbnail || null,
       sections: form.sections.length > 0 ? form.sections : undefined,
+      gallery: form.gallery.length > 0 ? form.gallery : [],
       published: form.published,
     };
 
@@ -268,6 +274,21 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             value={form.client}
             onChange={(e) => setForm((prev) => ({ ...prev, client: e.target.value }))}
             placeholder="Client / brand name"
+          />
+        </div>
+
+        <div className={styles.formGroup}>
+          <label className={styles.label} htmlFor="pf-client-ig">
+            Instagram Client
+            <span style={{ color: 'var(--gray)', fontWeight: 400, marginLeft: 8, fontSize: 11 }}>— optional</span>
+          </label>
+          <input
+            id="pf-client-ig"
+            className={styles.input}
+            type="text"
+            value={form.client_ig}
+            onChange={(e) => setForm((prev) => ({ ...prev, client_ig: e.target.value }))}
+            placeholder="@username atau https://instagram.com/username"
           />
         </div>
 
@@ -421,6 +442,47 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             style={{ alignSelf: 'flex-start' }}
           >
             + Add Section
+          </button>
+        </div>
+      </div>
+
+      {/* Gallery */}
+      <div className={styles.formGroup}>
+        <label className={styles.label}>
+          Gallery
+          <span style={{ color: 'var(--gray)', fontWeight: 400, marginLeft: 8, fontSize: 11 }}>— optional, tampil sebagai carousel di bawah sections</span>
+        </label>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {form.gallery.map((url, i) => (
+            <div key={i} className={styles.sectionBlock}>
+              <div className={styles.sectionHeader}>
+                <span className={styles.sectionTitle}>Gallery {i + 1}</span>
+                <button
+                  type="button"
+                  className={`${styles.btn} ${styles.btnDanger} ${styles.btnSm}`}
+                  onClick={() => setForm((prev) => ({ ...prev, gallery: prev.gallery.filter((_, gi) => gi !== i) }))}
+                >
+                  Remove
+                </button>
+              </div>
+              <ImageUpload
+                value={url}
+                onChange={(newUrl) => setForm((prev) => ({
+                  ...prev,
+                  gallery: prev.gallery.map((g, gi) => gi === i ? newUrl : g),
+                }))}
+                folder="projects/gallery"
+                label={`gallery-${i}`}
+              />
+            </div>
+          ))}
+          <button
+            type="button"
+            className={`${styles.btn} ${styles.btnSecondary}`}
+            onClick={() => setForm((prev) => ({ ...prev, gallery: [...prev.gallery, ''] }))}
+            style={{ alignSelf: 'flex-start' }}
+          >
+            + Add Gallery Image
           </button>
         </div>
       </div>

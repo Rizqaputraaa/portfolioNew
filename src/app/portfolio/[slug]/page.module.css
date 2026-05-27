@@ -219,6 +219,34 @@
   max-width: 600px;
 }
 
+/* Client name + IG link row */
+.metaClientRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.metaIgLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: var(--font-sub);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--gray);
+  text-decoration: none;
+  border: 1px solid var(--gray-light);
+  border-radius: 20px;
+  padding: 2px 9px 2px 6px;
+  transition: color 0.2s, border-color 0.2s;
+  white-space: nowrap;
+}
+.metaIgLink:hover {
+  color: var(--white);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
 /* Right — tools */
 .toolsPanel {
   padding-top: 8px;
