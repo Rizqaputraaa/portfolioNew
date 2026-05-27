@@ -64,7 +64,17 @@ function PortfolioInner() {
     fetch(`/api/projects${cat !== 'all' ? `?category=${cat}` : ''}`)
       .then(r => r.ok ? r.json() : null)
       .then(data => {
-        if (Array.isArray(data)) setItems(data);
+        if (Array.isArray(data)) {
+          // Sort projects with active NEW badge to the top
+          const sorted = [...data].sort((a, b) => {
+            const aIsNew = isNewItem(a.project_date ?? a.created_at);
+            const bIsNew = isNewItem(b.project_date ?? b.created_at);
+            if (aIsNew && !bIsNew) return -1;
+            if (!aIsNew && bIsNew) return 1;
+            return 0;
+          });
+          setItems(sorted);
+        }
         else setItems([]);
       })
       .catch(() => setItems([]))

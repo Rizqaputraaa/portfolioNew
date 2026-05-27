@@ -1,4 +1,5 @@
 import { getProjects, getSources } from '@/lib/db';
+import { isNewItem } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 import HeroSection from './components/HeroSection/HeroSection';
@@ -17,7 +18,16 @@ const CATEGORY_LABELS: Record<string, string> = {
 export default async function HomePage() {
   const [projects, sources] = await Promise.all([getProjects(6), getSources(3)]);
 
-  const sliderSlides = projects.map(p => {
+  // Sort projects with active NEW badge to the top
+  const sortedProjects = [...projects].sort((a, b) => {
+    const aIsNew = isNewItem(a.project_date ?? a.created_at);
+    const bIsNew = isNewItem(b.project_date ?? b.created_at);
+    if (aIsNew && !bIsNew) return -1;
+    if (!aIsNew && bIsNew) return 1;
+    return 0;
+  });
+
+  const sliderSlides = sortedProjects.map(p => {
     // Pakai categories array (baru) atau fallback ke category lama
     const cats = p.categories?.length ? p.categories : (p.category ? [p.category] : []);
     const catDisplay = cats.map(c => CATEGORY_LABELS[c] ?? c.replace(/_/g, ' ').toUpperCase()).join(', ');
@@ -38,7 +48,7 @@ export default async function HomePage() {
       <GridSection
         title="MY WORK"
         allHref="/portfolio"
-        items={projects as any}
+        items={sortedProjects as any}
         basePath="/portfolio"
       />
       <GridSection
