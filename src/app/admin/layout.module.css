@@ -140,3 +140,76 @@
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
+
+/* ── Mobile: sidebar becomes a top bar ──────────────────────────────────── */
+@media (max-width: 768px) {
+  .shell {
+    flex-direction: column;
+  }
+
+  .sidebar {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    overflow: visible;
+    border-right: none;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  .logo {
+    flex: 1;
+    padding: 12px 16px;
+    border-bottom: none;
+  }
+
+  .sidebarFooter {
+    padding: 8px 16px;
+    border-top: none;
+  }
+
+  .userEmail {
+    display: none;
+  }
+
+  .logoutBtn {
+    width: auto;
+    padding: 6px 12px;
+  }
+
+  .nav {
+    order: 3;
+    flex: 1 0 100%;
+    flex-direction: row;
+    gap: 0;
+    padding: 0;
+    overflow-x: auto;
+    border-top: 1px solid #2a2a2a;
+    scrollbar-width: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .navLink {
+    padding: 12px 16px;
+    white-space: nowrap;
+    border-left: none;
+    border-bottom: 2px solid transparent;
+  }
+
+  .navLinkActive {
+    border-left-color: transparent;
+    border-bottom-color: var(--orange);
+  }
+
+  .content {
+    padding: 20px 16px;
+  }
+}
