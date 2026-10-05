@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { href: '/admin/projects',   label: 'Projects',   icon: '◈' },
   { href: '/admin/sources',    label: 'Sources',    icon: '◇' },
   { href: '/admin/categories', label: 'Kategori',   icon: '◉' },
+  { href: '/admin/todos',      label: 'Todos',      icon: '◻' },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
