@@ -6,7 +6,7 @@ import Footer from '@/components/Footer/Footer';
 
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isAdmin = pathname.startsWith('/admin');
+  const isAdmin = pathname.startsWith('/admin') || pathname.startsWith('/workspace');
 
   if (isAdmin) {
     return <main>{children}</main>;
