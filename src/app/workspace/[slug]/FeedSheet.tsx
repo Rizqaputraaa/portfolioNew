@@ -124,7 +124,10 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   // In review the client proposes changes; Danta decides what lands in the brief.
   const clientRevising = role === 'client' && status === 'brief_review';
   const working = role === 'designer' && (status === 'design' || status === 'revision');
-  const shareUrl = typeof window === 'undefined' ? '' : `${window.location.origin}/workspace/${slug}?feed=${number}`;
+  // NEXT_PUBLIC_SITE_URL pins the address used in shared links (e.g. https://rizqaputra.site), whichever
+  // address the page was opened from. Without it, links use the address currently in the browser.
+  const siteBase = (process.env.NEXT_PUBLIC_SITE_URL || (typeof window === 'undefined' ? '' : window.location.origin)).replace(/\/$/, '');
+  const shareUrl = siteBase ? `${siteBase}/w/${slug}/${number}` : '';
   const shareMessage = `Halo kak, brief Feed ${number}${detail.title ? ` (${detail.title})` : ''} sudah siap direview.\n` +
     `Buka: ${shareUrl}\nMasukkan PIN workspace yang sudah dikirim sebelumnya.`;
 
