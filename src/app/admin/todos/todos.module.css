@@ -378,3 +378,32 @@
   .check:active,
   .deleteBtn:active { transform: none; }
 }
+
+/* ── Reorder handle ────────────────────────────────────────────────────── */
+.dragHandle {
+  background: transparent;
+  border: none;
+  color: var(--label-3);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+  cursor: grab;
+  touch-action: none; /* let the pointer drag instead of scrolling the page */
+  transition: color 0.15s var(--ease), background 0.15s var(--ease);
+}
+
+.dragHandle:hover { color: var(--label-2); background: rgba(255, 255, 255, 0.06); }
+.dragHandle:active { cursor: grabbing; }
+.dragHandle:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.4); }
+
+.itemDragging {
+  z-index: 2;
+  background: var(--bg-2);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 1px 4px rgba(0, 0, 0, 0.4);
+}
+
+.itemDragging::before { display: none; }

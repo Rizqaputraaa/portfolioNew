@@ -1,6 +1,15 @@
 'use client';
 
 import { useState, useEffect, useCallback, FormEvent } from 'react';
+import {
+  DndContext, closestCenter, PointerSensor, KeyboardSensor, useSensor, useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext, verticalListSortingStrategy, useSortable, arrayMove,
+  sortableKeyboardCoordinates,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import { getSupabase } from '@/lib/supabase';
 import { useAdminAuth } from '../useAdminAuth';
 import styles from './todos.module.css';
@@ -14,6 +23,7 @@ interface Todo {
   done: boolean;
   priority: Priority;
   created_at: string;
+  position?: number | null;
 }
 
 const PRIORITY_LABEL: Record<Priority, string> = {
@@ -27,6 +37,83 @@ const FILTERS: { value: Filter; label: string }[] = [
   { value: 'active', label: 'Active' },
   { value: 'done',   label: 'Done'   },
 ];
+
+// Manual order first (position asc); anything without a position falls back to newest-first.
+const byOrder = (a: Todo, b: Todo) => {
+  const pa = a.position ?? Infinity;
+  const pb = b.position ?? Infinity;
+  if (pa !== pb) return pa - pb;
+  return b.created_at.localeCompare(a.created_at);
+};
+
+interface ItemProps {
+  todo: Todo;
+  draggable: boolean;
+  onToggle: (todo: Todo) => void;
+  onRemove: (id: string) => void;
+}
+
+function TodoItem({ todo, draggable, onToggle, onRemove }: ItemProps) {
+  const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } =
+    useSortable({ id: todo.id, disabled: !draggable });
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`${styles.item} ${todo.done ? styles.itemDone : ''} ${isDragging ? styles.itemDragging : ''}`}
+    >
+      {/* Circle checkbox */}
+      <button
+        type="button"
+        className={`${styles.check} ${todo.done ? styles.checkDone : ''}`}
+        aria-pressed={todo.done}
+        onClick={() => onToggle(todo)}
+        aria-label={todo.done ? 'Mark as not done' : 'Mark as done'}
+      >
+        {todo.done && (
+          <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
+            <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.2"
+              strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        )}
+      </button>
+
+      {/* Task text */}
+      <span className={styles.itemText}>{todo.text}</span>
+
+      {/* Priority */}
+      <span className={`${styles.priorityBadge} ${styles[`p_${todo.priority}`]}`}>
+        {PRIORITY_LABEL[todo.priority]}
+      </span>
+
+      {/* Delete */}
+      <button type="button" className={styles.deleteBtn} onClick={() => onRemove(todo.id)} aria-label="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+          <path d="M18 6L6 18M6 6l12 12"/>
+        </svg>
+      </button>
+
+      {/* Reorder handle */}
+      {draggable && (
+        <button
+          type="button"
+          ref={setActivatorNodeRef}
+          className={styles.dragHandle}
+          aria-label={`Reorder "${todo.text}"`}
+          {...attributes}
+          {...listeners}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
+            <path d="M4 8h16M4 16h16"/>
+          </svg>
+        </button>
+      )}
+    </li>
+  );
+}
 
 export default function TodosPage() {
   const { user } = useAdminAuth();
@@ -46,7 +133,7 @@ export default function TodosPage() {
       .from('todos')
       .select('*')
       .order('created_at', { ascending: false });
-    setTodos((data as Todo[]) ?? []);
+    setTodos(((data as Todo[]) ?? []).sort(byOrder));
     setLoading(false);
   }, [supabase]);
 
@@ -57,9 +144,12 @@ export default function TodosPage() {
     if (!text.trim() || !supabase) return;
     setAdding(true);
     setError('');
+    // New tasks go to the top; only set a position once the list is manually ordered.
+    const positions = todos.map(t => t.position).filter((p): p is number => p != null);
+    const position = positions.length ? Math.min(...positions) - 1 : undefined;
     const { error: err } = await supabase
       .from('todos')
-      .insert({ text: text.trim(), priority, done: false });
+      .insert({ text: text.trim(), priority, done: false, ...(position !== undefined && { position }) });
     if (err) setError(err.message);
     else { setText(''); setPriority('normal'); await load(); }
     setAdding(false);
@@ -83,6 +173,34 @@ export default function TodosPage() {
     if (!ids.length) return;
     await supabase.from('todos').delete().in('id', ids);
     setTodos(prev => prev.filter(t => !t.done));
+  };
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const handleDragEnd = async ({ active, over }: DragEndEvent) => {
+    if (!supabase || !over || active.id === over.id) return;
+    const from = todos.findIndex(t => t.id === active.id);
+    const to   = todos.findIndex(t => t.id === over.id);
+    if (from < 0 || to < 0) return;
+
+    const previous = todos;
+    const next = arrayMove(todos, from, to).map((t, i) => ({ ...t, position: i }));
+    setTodos(next); // optimistic
+
+    const changed = next.filter((t, i) => previous[i]?.id !== t.id || previous[i]?.position !== t.position);
+    const results = await Promise.all(
+      changed.map(t => supabase.from('todos').update({ position: t.position }).eq('id', t.id)),
+    );
+    const failed = results.find(r => r.error);
+    if (failed?.error) {
+      setTodos(previous);
+      setError(`Could not save order: ${failed.error.message}`);
+    } else {
+      setError('');
+    }
   };
 
   const filtered = todos.filter(t => {
@@ -170,45 +288,21 @@ export default function TodosPage() {
           {filter === 'done' ? 'No completed tasks yet.' : 'No tasks. Add one above!'}
         </div>
       ) : (
-        <ul className={styles.list}>
-          {filtered.map(todo => (
-            <li key={todo.id} className={`${styles.item} ${todo.done ? styles.itemDone : ''}`}>
-
-              {/* Circle checkbox */}
-              <button
-                type="button"
-                className={`${styles.check} ${todo.done ? styles.checkDone : ''}`}
-                aria-pressed={todo.done}
-                onClick={() => toggle(todo)}
-                aria-label={todo.done ? 'Mark as not done' : 'Mark as done'}
-              >
-                {todo.done && (
-                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none">
-                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2.2"
-                      strokeLinecap="round" strokeLinejoin="round"/>
-                  </svg>
-                )}
-              </button>
-
-              {/* Task text */}
-              <span className={styles.itemText}>{todo.text}</span>
-
-              {/* Priority */}
-              <span className={`${styles.priorityBadge} ${styles[`p_${todo.priority}`]}`}>
-                {PRIORITY_LABEL[todo.priority]}
-              </span>
-
-              {/* Delete */}
-              <button type="button" className={styles.deleteBtn} onClick={() => remove(todo.id)} aria-label="Delete">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
-                  stroke="currentColor" strokeWidth="2.2" strokeLinecap="round">
-                  <path d="M18 6L6 18M6 6l12 12"/>
-                </svg>
-              </button>
-
-            </li>
-          ))}
-        </ul>
+        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={filtered.map(t => t.id)} strategy={verticalListSortingStrategy}>
+            <ul className={styles.list}>
+              {filtered.map(todo => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  draggable={filter === 'all'}
+                  onToggle={toggle}
+                  onRemove={remove}
+                />
+              ))}
+            </ul>
+          </SortableContext>
+        </DndContext>
       )}
     </div>
   );
