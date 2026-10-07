@@ -164,3 +164,19 @@ notify pgrst, 'reload schema';
 alter table public.ws_feeds add column if not exists brief_changed_at   timestamptz;
 alter table public.ws_feeds add column if not exists brief_confirmed_at timestamptz;
 notify pgrst, 'reload schema';
+
+-- v6: no slide limit, and "result" links (e.g. a Drive folder with the finished files) next to reference links.
+alter table public.ws_slides drop constraint if exists ws_slides_position_check;
+alter table public.ws_slides add constraint ws_slides_position_check check (position >= 1);
+alter table public.ws_files  drop constraint if exists ws_files_slide_check;
+alter table public.ws_files  add constraint ws_files_slide_check check (slide >= 1);
+
+alter table public.ws_links add column if not exists kind text not null default 'reference';
+alter table public.ws_links drop constraint if exists ws_links_kind_check;
+alter table public.ws_links add constraint ws_links_kind_check check (kind in ('reference', 'result'));
+notify pgrst, 'reload schema';
+
+-- v7: a project can run without a client login. Danta then sends the finished files to the client
+-- himself (a WhatsApp message with the result link), and nobody from the client side signs in.
+alter table public.ws_projects add column if not exists client_enabled boolean not null default true;
+notify pgrst, 'reload schema';

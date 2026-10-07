@@ -232,7 +232,7 @@
   letter-spacing: 0.04em;
 }
 
-.who { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+.who { display: flex; align-items: center; justify-content: flex-end; flex-wrap: wrap; gap: 8px 10px; }
 
 .rolePill {
   padding: 4px 12px;
@@ -717,7 +717,7 @@
 
 @media (max-width: 760px) {
   .shell { padding: max(24px, env(safe-area-inset-top)) 16px max(48px, env(safe-area-inset-bottom)); }
-  .topbar { flex-direction: row; align-items: center; margin-bottom: 20px; }
+  .topbar { flex-direction: row; flex-wrap: wrap; align-items: center; margin-bottom: 20px; }
   .title { font-size: 22px; line-height: 28px; }
   .bigNumber { font-size: 30px; line-height: 36px; }
   .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }

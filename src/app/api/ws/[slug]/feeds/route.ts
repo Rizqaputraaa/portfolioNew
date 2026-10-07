@@ -11,7 +11,7 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   if (!client) return fail('Server belum siap', 500);
 
   const { data: project } = await client
-    .from('ws_projects').select('slug, name, month_label, target_feeds').eq('id', session.pid).maybeSingle();
+    .from('ws_projects').select('slug, name, month_label, target_feeds, client_enabled').eq('id', session.pid).maybeSingle();
   if (!project) return fail('Workspace tidak ditemukan', 404);
 
   const feeds = await listFeeds(client, session.pid, session.role);

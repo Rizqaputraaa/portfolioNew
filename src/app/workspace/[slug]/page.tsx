@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation';
 import { api, ApiError, fileUrl } from './api';
 import FeedSheet from './FeedSheet';
 import SmartImage from './SmartImage';
+import ChangePin from './ChangePin';
 import {
   ROLE_LABEL, STATUS_LABEL, STATUS_ORDER,
   type FeedSummary, type ProjectInfo, type Role,
@@ -28,6 +29,7 @@ export default function WorkspacePage() {
   const [loading, setLoading] = useState(true);
   const [open, setOpen] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
+  const [pinOpen, setPinOpen] = useState(false);
   const [error, setError] = useState('');
 
   const load = useCallback(async () => {
@@ -90,6 +92,8 @@ export default function WorkspacePage() {
   const count = (s: string) => feeds.filter(f => f.status === s).length;
   const done = count('approved') + count('posted');
   const unreadCount = feeds.filter(f => f.unread).length;
+  // Without a client there is no "Review Brief" step to show.
+  const statuses = STATUS_ORDER.filter(s => project.client_enabled !== false || s !== 'brief_review');
   const canCreate = me.role !== 'designer';
   const nextNumber = feeds.length ? Math.max(...feeds.map(f => f.number)) + 1 : 1;
 
@@ -105,6 +109,9 @@ export default function WorkspacePage() {
           </div>
           <div className={styles.who}>
             <span className={styles.rolePill}>{ROLE_LABEL[me.role]}</span>
+            <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => setPinOpen(true)}>
+              Ganti PIN
+            </button>
             <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={logout}>
               Keluar
             </button>
@@ -123,13 +130,13 @@ export default function WorkspacePage() {
             </span>
           </div>
           <div className={styles.bar} role="img" aria-label={`${done} dari ${target} feed disetujui`}>
-            {STATUS_ORDER.map(s => count(s) > 0 && (
+            {statuses.map(s => count(s) > 0 && (
               <div key={s} className={styles.barSeg} style={{ flex: count(s), background: SEG_COLOR[s] }} />
             ))}
             {target - feeds.length > 0 && <div className={styles.barSeg} style={{ flex: target - feeds.length }} />}
           </div>
           <div className={styles.legend}>
-            {STATUS_ORDER.map(s => (
+            {statuses.map(s => (
               <span key={s} className={styles.legendItem}>
                 <span className={styles.dot} style={{ background: SEG_COLOR[s] }} />
                 {STATUS_LABEL[s]} {count(s)}
@@ -183,11 +190,14 @@ export default function WorkspacePage() {
         </div>
       </div>
 
+      {pinOpen && <ChangePin slug={slug} onClose={() => setPinOpen(false)} />}
+
       {open !== null && (
         <FeedSheet
           slug={slug}
           number={open}
           role={me.role}
+          clientEnabled={project.client_enabled !== false}
           onClose={() => setOpen(null)}
           onChanged={load}
           onSeen={load}

@@ -100,7 +100,7 @@ export async function checkLogin(slug: string, pin: string) {
   if (!client) return { error: 'Server belum siap', status: 500 as const };
 
   const { data: project } = await client
-    .from('ws_projects').select('id, slug, name, failed_attempts, locked_until').eq('slug', slug).maybeSingle();
+    .from('ws_projects').select('id, slug, name, failed_attempts, locked_until, client_enabled').eq('slug', slug).maybeSingle();
   if (!project) return { error: 'Workspace tidak ditemukan', status: 404 as const };
 
   if (project.locked_until && new Date(project.locked_until) > new Date()) {
@@ -111,7 +111,9 @@ export async function checkLogin(slug: string, pin: string) {
     .from('ws_members').select('id, role, name, pin_hash').eq('project_id', project.id);
 
   // The PIN itself identifies the member, so PINs must be unique within a project (the seed script ensures it).
-  const member = (members ?? []).find(m => verifyPin(pin, m.pin_hash));
+  const member = (members ?? [])
+    .filter(m => project.client_enabled !== false || m.role !== 'client')
+    .find(m => verifyPin(pin, m.pin_hash));
 
   if (!member) {
     const attempts = (project.failed_attempts ?? 0) + 1;

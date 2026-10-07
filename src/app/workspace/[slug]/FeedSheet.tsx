@@ -1,9 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { api, fileUrl, fmtDate, fmtSize, isImage, uploadFeedFile } from './api';
+import { api, copyText, fileUrl, fmtDate, fmtSize, isImage, uploadFeedFile } from './api';
 import {
-  MAX_SLIDES, ROLE_LABEL, STATUS_LABEL,
+  ROLE_LABEL, STATUS_LABEL,
   type BriefRevision, type FeedDetail, type FeedFile, type Role, type Slide,
 } from '@/lib/workspace/types';
 import SmartImage from './SmartImage';
@@ -13,6 +13,7 @@ interface Props {
   slug: string;
   number: number;
   role: Role;
+  clientEnabled: boolean;
   onClose: () => void;
   onChanged: () => void;
   onSeen?: () => void;
@@ -31,7 +32,7 @@ interface PendingUpload {
 }
 const emptySlide = (position: number): Slide => ({ position, headline: '', body: '' });
 
-export default function FeedSheet({ slug, number, role, onClose, onChanged, onSeen }: Props) {
+export default function FeedSheet({ slug, number, role, clientEnabled, onClose, onChanged, onSeen }: Props) {
   const [detail, setDetail] = useState<FeedDetail | null>(null);
   const [title, setTitle] = useState('');
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -44,12 +45,15 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   const [toClient, setToClient] = useState(false);
   const [closing, setClosing] = useState(false);
   const [pending, setPending] = useState<PendingUpload[]>([]);
+  const [resultLabel, setResultLabel] = useState('');
+  const [resultUrl, setResultUrl] = useState('');
+  const [copiedId, setCopiedId] = useState('');
   const [linkLabel, setLinkLabel] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [zoom, setZoom] = useState<FeedFile | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [resultShareOpen, setResultShareOpen] = useState(false);
   const [revNote, setRevNote] = useState('');
-  const [copied, setCopied] = useState(false);
   const briefInput = useRef<HTMLInputElement>(null);
   const designInput = useRef<HTMLInputElement>(null);
   const uploadSlide = useRef(1);
@@ -143,6 +147,17 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   const open = detail.version + 1; // version being worked on
   // In review the client proposes changes; Danta decides what lands in the brief.
   const clientRevising = role === 'client' && status === 'brief_review';
+  const referenceLinks = detail.links.filter(l => l.kind !== 'result');
+  const resultLinks = detail.links.filter(l => l.kind === 'result');
+  // The designer and Danta add result links, but only once the brief has gone to the designer.
+  const canAddResult = (role === 'designer' || role === 'gozi') && status !== 'brief' && status !== 'brief_review';
+  const feedName = detail.title && !/^Feed \d+$/.test(detail.title) ? `Feed ${number} (${detail.title})` : `Feed ${number}`;
+  const resultMessage =
+    `Halo kak, hasil ${feedName} sudah selesai.\n` +
+    (resultLinks.length === 1
+      ? `Link hasil: ${resultLinks[0].url}`
+      : `Link hasil:\n${resultLinks.map(l => `${l.label}: ${l.url}`).join('\n')}`) +
+    '\nSilakan diunduh ya kak, terima kasih.';
   const working = role === 'designer' && (status === 'design' || status === 'revision');
   // NEXT_PUBLIC_SITE_URL pins the address used in shared links (e.g. https://rizqaputra.site), whichever
   // address the page was opened from. Without it, links use the address currently in the browser.
@@ -198,6 +213,12 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
       items.forEach(it => it.previewUrl && URL.revokeObjectURL(it.previewUrl));
       setPending(p => p.filter(x => !items.some(it => it.id === x.id)));
     });
+  };
+
+  const copyLink = async (id: string, url: string) => {
+    await copyText(url);
+    setCopiedId(id);
+    window.setTimeout(() => setCopiedId(cur => (cur === id ? '' : cur)), 1800);
   };
 
   const sendComment = () => {
@@ -262,10 +283,9 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
           <div className={styles.actions}>
             <button
               className={`${styles.btn} ${styles.btnGhost}`}
-              disabled={slides.length >= MAX_SLIDES}
               onClick={() => { setSlides(prev => [...prev, emptySlide(prev.length + 1)]); setDirty(true); }}
             >
-              + Slide ({slides.length}/{MAX_SLIDES})
+              + Slide
             </button>
             <button className={styles.btn} disabled={!dirty || !!busy || !title.trim()} onClick={saveBrief}>
               {busy === 'save' ? 'Mengirim…'
@@ -340,10 +360,10 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>Link referensi</h3>
         <div className={styles.group}>
-          {detail.links.length === 0 && !canUploadBrief && (
+          {referenceLinks.length === 0 && !canUploadBrief && (
             <span className={`${styles.muted} ${styles.small}`}>Belum ada link.</span>
           )}
-          {detail.links.map(l => (
+          {referenceLinks.map(l => (
             <div key={l.id} className={styles.fileRow}>
               <a className={`${styles.fileName} ${styles.fileLink}`} href={l.url} target="_blank" rel="noopener noreferrer">
                 {l.label}
@@ -436,7 +456,7 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
 
           {/* ── Workflow actions ───────────────────────────────────── */}
           <div className={`${styles.actions} ${styles.actionBar}`}>
-            {role === 'gozi' && status === 'brief' && (
+            {role === 'gozi' && status === 'brief' && (clientEnabled ? (
               <>
                 <button className={styles.btn} disabled={!!busy || dirty}
                   onClick={async () => { await doAction('send_brief_to_client'); setShareOpen(true); }}>
@@ -447,7 +467,11 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
                   Langsung ke designer
                 </button>
               </>
-            )}
+            ) : (
+              <button className={styles.btn} disabled={!!busy || dirty} onClick={() => doAction('send_to_designer')}>
+                Kirim ke designer
+              </button>
+            ))}
             {role === 'gozi' && status === 'brief_review' && (
               <>
                 <button className={styles.btn} disabled={!!busy || dirty || !!detail.revision}
@@ -487,6 +511,13 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
                   Minta revisi
                 </button>
               </>
+            )}
+            {role === 'gozi' && (status === 'approved' || status === 'posted') && (
+              <button className={styles.btn} disabled={!!busy || resultLinks.length === 0}
+                title={resultLinks.length === 0 ? 'Tambahkan link hasil (Google Drive) dulu' : ''}
+                onClick={() => setResultShareOpen(true)}>
+                Kirim hasil ke client
+              </button>
             )}
             {status === 'approved' && role !== 'designer' && (
               <button className={`${styles.btn} ${styles.btnTint}`} disabled={!!busy} onClick={() => doAction('mark_posted')}>
@@ -572,6 +603,65 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
             </section>
           )}
 
+          {/* ── Result links ───────────────────────────────────────── */}
+          {(canAddResult || resultLinks.length > 0) && (
+            <section className={styles.section}>
+              <h3 className={styles.sectionTitle}>Link hasil</h3>
+              <div className={styles.group}>
+                {resultLinks.length === 0 && (
+                  <span className={`${styles.muted} ${styles.small}`}>
+                    Tempel link folder hasil akhir (Drive, dll.) supaya mudah disalin.
+                  </span>
+                )}
+                {resultLinks.map(l => (
+                  <div key={l.id} className={styles.fileRow}>
+                    <span className={styles.fileName}>
+                      {l.label}
+                      <span className={styles.fileMeta}> · {hostOf(l.url)}</span>
+                    </span>
+                    <button className={styles.linkBtn} onClick={() => copyLink(l.id, l.url)}
+                      aria-label={`Salin link ${l.label}`}>
+                      {copiedId === l.id ? 'Tersalin ✓' : 'Salin'}
+                    </button>
+                    <a className={styles.fileLink} href={l.url} target="_blank" rel="noopener noreferrer">Buka</a>
+                    {canAddResult && (
+                      <button className={styles.iconBtn} aria-label={`Hapus link ${l.label}`} disabled={!!busy}
+                        onClick={() => run('link', () => api(slug, `/feeds/${number}/links?id=${l.id}`, { method: 'DELETE' }))}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                ))}
+                {canAddResult && (
+                  <form
+                    className={styles.linkForm}
+                    onSubmit={e => {
+                      e.preventDefault();
+                      if (!resultUrl.trim()) return;
+                      run('link', async () => {
+                        await api(slug, `/feeds/${number}/links`, {
+                          method: 'POST', json: { kind: 'result', label: resultLabel, url: resultUrl },
+                        });
+                        setResultLabel('');
+                        setResultUrl('');
+                      });
+                    }}
+                  >
+                    <input className={styles.input} placeholder="Label (mis. Hasil akhir, Folder Drive)" aria-label="Label link hasil"
+                      value={resultLabel} onChange={e => setResultLabel(e.target.value)} maxLength={80} />
+                    <input className={styles.input} placeholder="Tempel link hasil…" aria-label="URL link hasil" inputMode="url"
+                      autoCapitalize="none" value={resultUrl} onChange={e => setResultUrl(e.target.value)} />
+                    <button className={`${styles.btn} ${styles.btnTint}`} type="submit" disabled={!!busy || !resultUrl.trim()}>
+                      + Tambah link hasil
+                    </button>
+                  </form>
+                )}
+              </div>
+            </section>
+          )}
+
           {/* ── Comments ───────────────────────────────────────────── */}
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Diskusi</h3>
@@ -627,31 +717,23 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
       </aside>
 
       {shareOpen && role === 'gozi' && (
-        <div className={styles.modalScrim} onClick={() => setShareOpen(false)}>
-          <div className={styles.modal} role="dialog" aria-label="Bagikan ke client" onClick={e => e.stopPropagation()}>
-            <ShareBox
-              url={shareUrl}
-              message={shareMessage}
-              copied={copied}
-              onCopy={async () => {
-                try {
-                  await navigator.clipboard.writeText(shareMessage);
-                } catch {
-                  // Clipboard can be blocked (insecure origin / permissions): fall back to the old way.
-                  const ta = document.createElement('textarea');
-                  ta.value = shareMessage;
-                  document.body.appendChild(ta);
-                  ta.select();
-                  document.execCommand('copy');
-                  ta.remove();
-                }
-                setCopied(true);
-                setTimeout(() => setCopied(false), 2000);
-              }}
-              onClose={() => setShareOpen(false)}
-            />
-          </div>
-        </div>
+        <SharePopup
+          title="Bagikan ke client"
+          hint="Client membuka link ini, memasukkan PIN, lalu langsung melihat brief feed ini. PIN tidak ikut di link."
+          message={shareMessage}
+          url={shareUrl}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
+
+      {resultShareOpen && role === 'gozi' && (
+        <SharePopup
+          title="Kirim hasil ke client"
+          hint="Salin pesan ini lalu tempel di WhatsApp ke client, atau tekan tombol WhatsApp. Isinya link hasil Google Drive."
+          message={resultMessage}
+          url={resultLinks[0]?.url ?? ''}
+          onClose={() => setResultShareOpen(false)}
+        />
       )}
 
       {zoom && (
@@ -815,33 +897,44 @@ function VersionBlock({
   );
 }
 
-function ShareBox({
-  url, message, copied, onCopy, onClose,
-}: { url: string; message: string; copied: boolean; onCopy: () => void; onClose: () => void }) {
+/** Popup with a ready-to-send message: copy it, open WhatsApp with it, or use the phone's share sheet. */
+function SharePopup({ title, hint, message, url, onClose }: {
+  title: string; hint: string; message: string; url: string; onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
   const canShare = typeof navigator !== 'undefined' && typeof navigator.share === 'function';
+
+  const copy = async () => {
+    await copyText(message);
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
   return (
-    <div className={styles.group}>
-      <div className={styles.slideHead}>
-        <span className={styles.slideNum}>Bagikan ke client</span>
-        <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={onClose}>Tutup</button>
-      </div>
-      <span className={`${styles.muted} ${styles.small}`}>
-        Client membuka link ini, memasukkan PIN, lalu langsung melihat brief feed ini. PIN tidak ikut di link.
-      </span>
-      <textarea className={styles.textarea} readOnly rows={4} value={message} aria-label="Pesan untuk client"
-        onFocus={e => e.currentTarget.select()} />
-      <div className={styles.actions}>
-        <button className={styles.btn} onClick={onCopy}>{copied ? 'Tersalin ✓' : 'Salin pesan'}</button>
-        <a className={`${styles.btn} ${styles.btnTint}`} style={{ display: 'inline-flex', alignItems: 'center' }}
-          href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">
-          WhatsApp
-        </a>
-        {canShare && (
-          <button className={`${styles.btn} ${styles.btnGhost}`}
-            onClick={() => navigator.share({ text: message, url }).catch(() => {})}>
-            Bagikan…
-          </button>
-        )}
+    <div className={styles.modalScrim} onClick={onClose}>
+      <div className={styles.modal} role="dialog" aria-label={title} onClick={e => e.stopPropagation()}>
+        <div className={styles.group}>
+          <div className={styles.slideHead}>
+            <span className={styles.slideNum}>{title}</span>
+            <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={onClose}>Tutup</button>
+          </div>
+          <span className={`${styles.muted} ${styles.small}`}>{hint}</span>
+          <textarea className={styles.textarea} readOnly rows={5} value={message} aria-label="Pesan untuk client"
+            onFocus={e => e.currentTarget.select()} />
+          <div className={styles.actions}>
+            <button className={styles.btn} onClick={copy}>{copied ? 'Tersalin ✓' : 'Salin pesan'}</button>
+            <a className={`${styles.btn} ${styles.btnTint}`} style={{ display: 'inline-flex', alignItems: 'center' }}
+              href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noopener noreferrer">
+              WhatsApp
+            </a>
+            {canShare && (
+              <button className={`${styles.btn} ${styles.btnGhost}`}
+                onClick={() => navigator.share({ text: message, url: url || undefined }).catch(() => {})}>
+                Bagikan…
+              </button>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -111,7 +111,7 @@ export async function getFeedDetail(
     client.from('ws_files').select(FILE_COLS).eq('feed_id', row.id).order('created_at'),
     client.from('ws_comments').select('id, role, kind, visibility, body, version, created_at')
       .eq('feed_id', row.id).order('created_at'),
-    client.from('ws_links').select('id, label, url, added_by, created_at')
+    client.from('ws_links').select('id, kind, label, url, added_by, created_at')
       .eq('feed_id', row.id).order('created_at'),
   ]);
 
@@ -127,7 +127,10 @@ export async function getFeedDetail(
     updated_at: row.updated_at, version: sent, cover_file_id: cover?.id ?? null,
     slides: (slides ?? []) as Slide[],
     files: visible.files,
-    links: (links ?? []) as FeedLink[],
+    // Where the finished files can be copied from: the client only sees it once the design is approved.
+    links: ((links ?? []) as FeedLink[]).filter(
+      l => role !== 'client' || l.kind !== 'result' || row.status === 'approved' || row.status === 'posted',
+    ),
     revision: revision ?? null,
     brief_confirmed: !!row.brief_confirmed_at
       && (!row.brief_changed_at || new Date(row.brief_changed_at) <= new Date(row.brief_confirmed_at)),

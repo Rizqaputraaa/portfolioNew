@@ -40,6 +40,7 @@ export interface FeedFile {
 
 export interface FeedLink {
   id: string;
+  kind: 'reference' | 'result';
   label: string;
   url: string;
   added_by: Role;
@@ -95,6 +96,8 @@ export interface ProjectInfo {
   name: string;
   month_label: string | null;
   target_feeds: number;
+  client_enabled: boolean;
 }
 
-export const MAX_SLIDES = 3;
+// No limit in the UI. This is only a technical safety cap so a bad request cannot create thousands of rows.
+export const MAX_SLIDES = 50;
