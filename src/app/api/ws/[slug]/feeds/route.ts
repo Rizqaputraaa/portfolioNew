@@ -56,7 +56,6 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
         position: i + 1,
         headline: String(s.headline ?? ''),
         body: String(s.body ?? ''),
-        highlight: String(s.highlight ?? ''),
       })),
     );
   }

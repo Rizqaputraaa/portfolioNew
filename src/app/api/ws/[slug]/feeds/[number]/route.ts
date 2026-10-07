@@ -60,7 +60,6 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
           position: i + 1,
           headline: String(s.headline ?? ''),
           body: String(s.body ?? ''),
-          highlight: String(s.highlight ?? ''),
         })),
       );
       if (slideErr) return fail(slideErr.message, 500);

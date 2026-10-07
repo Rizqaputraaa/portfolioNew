@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState, FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, FormEvent } from 'react';
 import { useParams } from 'next/navigation';
 import { api, ApiError, fileUrl } from './api';
 import FeedSheet from './FeedSheet';
@@ -17,8 +17,8 @@ interface Overview {
 }
 
 const SEG_COLOR: Record<string, string> = {
-  brief: '#8E8E93', brief_review: '#5E5CE6', design: '#0A84FF', review: '#FF9F0A',
-  revision: '#FF453A', approved: '#30D158', posted: '#BF5AF2',
+  brief: '#6F6F6F', brief_review: '#6E6CE6', design: '#3A8FE8', review: '#E0AE3C',
+  revision: '#E5534B', approved: '#34C759', posted: '#A569E8',
 };
 
 export default function WorkspacePage() {
@@ -140,7 +140,8 @@ export default function WorkspacePage() {
         {error && <div className={styles.error} role="alert" style={{ marginBottom: 16 }}>{error}</div>}
 
         <div className={styles.grid}>
-          {Array.from({ length: target }, (_, i) => i + 1).map(n => {
+          {Array.from({ length: target }, (_, i) => i + 1).map((n, idx) => {
+            const stagger = { '--i': idx } as React.CSSProperties;
             const feed = byNumber.get(n);
             if (!feed) {
               const isNext = n === nextNumber && canCreate;
@@ -151,15 +152,15 @@ export default function WorkspacePage() {
                   disabled={!isNext || creating}
                   onClick={() => isNext && createFeed()}
                   aria-label={isNext ? `Buat brief feed ${n}` : `Feed ${n} kosong`}
-                  style={!isNext ? { cursor: 'default' } : undefined}
+                  style={{ ...stagger, ...(!isNext ? { cursor: 'default' } : {}) }}
                 >
                   <span>Feed {n}</span>
-                  {isNext && <span style={{ color: 'var(--blue)' }}>{creating ? 'Membuat…' : '+ Buat brief'}</span>}
+                  {isNext && <span style={{ color: 'var(--accent-text)' }}>{creating ? 'Membuat…' : '+ Buat brief'}</span>}
                 </button>
               );
             }
             return (
-              <button key={n} className={styles.card} onClick={() => setOpen(n)}
+              <button key={n} className={styles.card} style={stagger} onClick={() => setOpen(n)}
                 aria-label={`Feed ${n}${feed.unread ? ', ada yang baru' : ''}`}>
                 {feed.unread && <span className={styles.newDot} aria-hidden />}
                 {feed.cover_file_id && (
@@ -200,6 +201,16 @@ function Login({ slug, onDone }: { slug: string; onDone: () => void }) {
   const [pin, setPin] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const cardRef = useRef<HTMLFormElement>(null);
+
+  // Re-trigger the shake each time, even for two wrong PINs in a row.
+  const shake = () => {
+    const el = cardRef.current;
+    if (!el) return;
+    el.classList.remove(styles.shake);
+    void el.offsetWidth;
+    el.classList.add(styles.shake);
+  };
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -211,6 +222,7 @@ function Login({ slug, onDone }: { slug: string; onDone: () => void }) {
       onDone();
     } catch (err) {
       setError((err as Error).message);
+      shake();
     }
     setBusy(false);
   };
@@ -218,7 +230,7 @@ function Login({ slug, onDone }: { slug: string; onDone: () => void }) {
   return (
     <div className={styles.root}>
       <div className={styles.loginWrap}>
-        <form className={styles.loginCard} onSubmit={submit}>
+        <form ref={cardRef} className={styles.loginCard} onSubmit={submit}>
           <h1 className={styles.loginTitle}>Workspace</h1>
           <p className={`${styles.muted} ${styles.small}`} style={{ margin: '0 0 20px' }}>
             Masukkan PIN yang kamu terima.

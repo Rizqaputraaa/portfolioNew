@@ -23,7 +23,6 @@ export interface Slide {
   position: number;
   headline: string;
   body: string;
-  highlight: string;
 }
 
 export interface FeedFile {

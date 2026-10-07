@@ -107,7 +107,7 @@ export async function getFeedDetail(
   const [{ data: revision }, { data: slides }, { data: files }, { data: comments }, { data: links }] = await Promise.all([
     client.from('ws_brief_revisions').select('id, title, slides, note, status, created_at')
       .eq('feed_id', row.id).eq('status', 'pending').maybeSingle().then(r => ({ data: r.data as BriefRevision | null })),
-    client.from('ws_slides').select('position, headline, body, highlight').eq('feed_id', row.id).order('position'),
+    client.from('ws_slides').select('position, headline, body').eq('feed_id', row.id).order('position'),
     client.from('ws_files').select(FILE_COLS).eq('feed_id', row.id).order('created_at'),
     client.from('ws_comments').select('id, role, kind, visibility, body, version, created_at')
       .eq('feed_id', row.id).order('created_at'),

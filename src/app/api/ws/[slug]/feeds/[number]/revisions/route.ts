@@ -9,7 +9,6 @@ function cleanSlides(input: unknown) {
     position: i + 1,
     headline: String(s.headline ?? ''),
     body: String(s.body ?? ''),
-    highlight: String(s.highlight ?? ''),
   }));
 }
 

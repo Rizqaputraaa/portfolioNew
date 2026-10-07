@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api, fileUrl, fmtDate, fmtSize, isImage, uploadFeedFile } from './api';
 import {
   MAX_SLIDES, ROLE_LABEL, STATUS_LABEL,
@@ -18,7 +18,7 @@ interface Props {
 }
 
 const MAX_REVISIONS = 2;
-const emptySlide = (position: number): Slide => ({ position, headline: '', body: '', highlight: '' });
+const emptySlide = (position: number): Slide => ({ position, headline: '', body: '' });
 
 export default function FeedSheet({ slug, number, role, onClose, onChanged, onSeen }: Props) {
   const [detail, setDetail] = useState<FeedDetail | null>(null);
@@ -31,6 +31,7 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   const [showRevision, setShowRevision] = useState(false);
   const [comment, setComment] = useState('');
   const [toClient, setToClient] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [linkLabel, setLinkLabel] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [zoom, setZoom] = useState<FeedFile | null>(null);
@@ -40,6 +41,13 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   const briefInput = useRef<HTMLInputElement>(null);
   const designInput = useRef<HTMLInputElement>(null);
   const uploadSlide = useRef(1);
+
+  // The sheet leaves the way it came in, then unmounts.
+  const requestClose = useCallback(() => {
+    if (closing) return;
+    setClosing(true);
+    window.setTimeout(onClose, 230);
+  }, [closing, onClose]);
 
   const load = useCallback(async (keepDraft = false) => {
     try {
@@ -59,10 +67,10 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   useEffect(() => { load().then(() => onSeen?.()); }, [load]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && requestClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+  }, [requestClose]);
 
   const run = async (label: string, fn: () => Promise<unknown>) => {
     setBusy(label);
@@ -80,11 +88,11 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   if (!detail) {
     return (
       <>
-        <div className={styles.scrim} onClick={onClose} />
-        <aside className={styles.sheet} role="dialog" aria-label={`Feed ${number}`}>
+        <div className={`${styles.scrim} ${closing ? styles.closing : ''}`} onClick={requestClose} />
+        <aside className={`${styles.sheet} ${closing ? styles.closing : ''}`} role="dialog" aria-label={`Feed ${number}`}>
           <div className={styles.sheetHead}>
             <div className={styles.sheetTitle}>Feed {number}</div>
-            <CloseButton onClick={onClose} />
+            <CloseButton onClick={requestClose} />
           </div>
           <div className={styles.sheetBody}>
             {error ? <div className={styles.error}>{error}</div> : <div className={styles.empty}>Memuat…</div>}
@@ -97,11 +105,11 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   if (detail.draft_hidden) {
     return (
       <>
-        <div className={styles.scrim} onClick={onClose} />
-        <aside className={styles.sheet} role="dialog" aria-label={`Feed ${number}`}>
+        <div className={`${styles.scrim} ${closing ? styles.closing : ''}`} onClick={requestClose} />
+        <aside className={`${styles.sheet} ${closing ? styles.closing : ''}`} role="dialog" aria-label={`Feed ${number}`}>
           <div className={styles.sheetHead}>
             <div className={styles.sheetTitle}>Feed {number}</div>
-            <CloseButton onClick={onClose} />
+            <CloseButton onClick={requestClose} />
           </div>
           <div className={styles.sheetBody}>
             <div className={styles.empty}>
@@ -216,13 +224,8 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
             </div>
             <div className={styles.field}>
               <label className={styles.label}>Informasi utama</label>
-              <textarea className={styles.textarea} rows={4} value={s.body} disabled={!canEditBrief}
-                onChange={e => updateSlide(i, { body: e.target.value })} />
-            </div>
-            <div className={styles.field}>
-              <label className={styles.label}>Highlight</label>
-              <input className={styles.input} value={s.highlight} disabled={!canEditBrief}
-                onChange={e => updateSlide(i, { highlight: e.target.value })} />
+              <ListTextarea value={s.body} disabled={!canEditBrief}
+                onChange={body => updateSlide(i, { body })} />
             </div>
           </div>
         ))}
@@ -383,12 +386,12 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
 
   return (
     <>
-      <div className={styles.scrim} onClick={onClose} />
-      <aside className={styles.sheet} role="dialog" aria-label={`Feed ${number}`}>
+      <div className={`${styles.scrim} ${closing ? styles.closing : ''}`} onClick={requestClose} />
+      <aside className={`${styles.sheet} ${closing ? styles.closing : ''}`} role="dialog" aria-label={`Feed ${number}`}>
         <div className={styles.sheetHead}>
           <div className={styles.sheetTitle}>Feed {number}{detail.title ? ` — ${detail.title}` : ''}</div>
-          <span className={`${styles.chip} ${styles[`s_${status}`]}`}>{STATUS_LABEL[status]}</span>
-          <CloseButton onClick={onClose} />
+          <span key={status} className={`${styles.chip} ${styles.chipPop} ${styles[`s_${status}`]}`}>{STATUS_LABEL[status]}</span>
+          <CloseButton onClick={requestClose} />
         </div>
 
         <div className={styles.sheetBody}>
@@ -535,7 +538,7 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
           <section className={styles.section}>
             <h3 className={styles.sectionTitle}>Diskusi</h3>
             <div className={styles.chat}>
-              {detail.comments.map(c => {
+              {detail.comments.map((c, idx) => {
                 if (c.kind === 'system') {
                   return <div key={c.id} className={styles.system}>{c.body} · {fmtDate(c.created_at)}</div>;
                 }
@@ -547,7 +550,8 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
                   c.kind === 'approval' ? styles.bubbleApproval : '',
                 ].join(' ');
                 return (
-                  <div key={c.id} className={cls} style={mine ? { alignSelf: 'flex-end' } : undefined}>
+                  <div key={c.id} className={cls}
+                    style={{ ...(mine ? { alignSelf: 'flex-end' } : {}), '--i': idx } as React.CSSProperties}>
                     <div className={styles.bubbleMeta}>
                       {ROLE_LABEL[c.role as Role] ?? c.role}
                       {c.kind === 'revision' && ' · revisi'}
@@ -793,8 +797,8 @@ function ShareBox({
 
 interface Change { label: string; before: string; after: string }
 
-const FIELD_LABEL: Record<'headline' | 'body' | 'highlight', string> = {
-  headline: 'Headline', body: 'Informasi utama', highlight: 'Highlight',
+const FIELD_LABEL: Record<'headline' | 'body', string> = {
+  headline: 'Headline', body: 'Informasi utama',
 };
 
 /** Field-by-field comparison of the live brief and the client's proposal. */
@@ -814,7 +818,7 @@ function diffBrief(
       out.push({ label: `Slide ${i + 1}`, before: [a.headline, a.body].filter(Boolean).join(' — ') || '(kosong)', after: '(slide dihapus)' });
       continue;
     }
-    for (const f of ['headline', 'body', 'highlight'] as const) {
+    for (const f of ['headline', 'body'] as const) {
       const before = (a?.[f] ?? '').trim();
       const after = (b?.[f] ?? '').trim();
       if (before !== after) {
@@ -823,4 +827,118 @@ function diffBrief(
     }
   }
   return out;
+}
+
+const BULLET_RE = /^(\s*)•\s/;
+const NUMBER_RE = /^(\s*)(\d+)\.\s/;
+
+/** "- item" and "* item" become real bullets, so pasted lists look right too. */
+const normalizeBullets = (t: string) => t.replace(/^(\s*)[-*]\s/gm, '$1• ');
+
+/**
+ * Textarea with list support: bullet / numbered buttons, Enter continues the list,
+ * Enter on an empty item ends it. Stored as plain text ("• item", "1. item"), so it
+ * pastes cleanly into Figma, WhatsApp or Word.
+ */
+function ListTextarea({ value, onChange, disabled }: {
+  value: string; onChange: (v: string) => void; disabled?: boolean;
+}) {
+  const ref = useRef<HTMLTextAreaElement>(null);
+  const selection = useRef<[number, number] | null>(null);
+
+  // Grow with the content and restore the caret after list edits.
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = `${Math.max(el.scrollHeight + 2, 96)}px`;
+    if (selection.current) {
+      el.setSelectionRange(selection.current[0], selection.current[1]);
+      selection.current = null;
+    }
+  }, [value]);
+
+  const commit = (next: string, start: number, end = start) => {
+    selection.current = [start, end];
+    onChange(next);
+  };
+
+  const toggleList = (kind: 'bullet' | 'number') => {
+    const el = ref.current;
+    if (!el) return;
+    const from = value.lastIndexOf('\n', el.selectionStart - 1) + 1;
+    const nl = value.indexOf('\n', el.selectionEnd);
+    const to = nl === -1 ? value.length : nl;
+    const lines = value.slice(from, to).split('\n');
+
+    const marker = kind === 'bullet' ? BULLET_RE : NUMBER_RE;
+    const filled = lines.filter(l => l.trim());
+    const allMarked = filled.length > 0 && filled.every(l => marker.test(l));
+    const strip = (l: string) => l.replace(BULLET_RE, '$1').replace(NUMBER_RE, '$1');
+
+    let n = 0;
+    const next = lines.map(l => {
+      if (!l.trim()) return l;
+      const bare = strip(l);
+      if (allMarked) return bare;
+      return kind === 'bullet' ? `• ${bare.trimStart()}` : `${++n}. ${bare.trimStart()}`;
+    }).join('\n');
+
+    const updated = value.slice(0, from) + next + value.slice(to);
+    commit(updated, from, from + next.length);
+    el.focus();
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key !== 'Enter' || e.shiftKey || e.nativeEvent.isComposing) return;
+    const el = e.currentTarget;
+    if (el.selectionStart !== el.selectionEnd) return;
+    const pos = el.selectionStart;
+    const lineStart = value.lastIndexOf('\n', pos - 1) + 1;
+    const lineEndIdx = value.indexOf('\n', pos);
+    const line = value.slice(lineStart, lineEndIdx === -1 ? value.length : lineEndIdx);
+
+    const bullet = line.match(BULLET_RE);
+    const number = line.match(NUMBER_RE);
+    const m = bullet ?? number;
+    if (!m) return;
+
+    e.preventDefault();
+    if (!line.slice(m[0].length).trim()) {
+      // Empty item: Enter ends the list.
+      commit(value.slice(0, lineStart) + value.slice(lineStart + m[0].length), lineStart);
+      return;
+    }
+    const next = bullet ? `${m[1]}• ` : `${m[1]}${Number(number![2]) + 1}. `;
+    const insert = `\n${next}`;
+    commit(value.slice(0, pos) + insert + value.slice(pos), pos + insert.length);
+  };
+
+  return (
+    <div className={styles.listEditor}>
+      {!disabled && (
+        <div className={styles.listBar}>
+          <button type="button" className={styles.listBtn} onMouseDown={e => e.preventDefault()}
+            onClick={() => toggleList('bullet')} aria-label="Daftar poin" title="Daftar poin">
+            • Poin
+          </button>
+          <button type="button" className={styles.listBtn} onMouseDown={e => e.preventDefault()}
+            onClick={() => toggleList('number')} aria-label="Daftar nomor" title="Daftar nomor">
+            1. Nomor
+          </button>
+        </div>
+      )}
+      <textarea
+        ref={ref}
+        className={styles.textarea}
+        value={value}
+        disabled={disabled}
+        onKeyDown={onKeyDown}
+        onChange={e => {
+          selection.current = [e.target.selectionStart, e.target.selectionEnd];
+          onChange(normalizeBullets(e.target.value));
+        }}
+      />
+    </div>
+  );
 }
