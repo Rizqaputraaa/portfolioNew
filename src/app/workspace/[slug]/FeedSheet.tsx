@@ -6,6 +6,7 @@ import {
   MAX_SLIDES, ROLE_LABEL, STATUS_LABEL,
   type BriefRevision, type FeedDetail, type FeedFile, type Role, type Slide,
 } from '@/lib/workspace/types';
+import SmartImage from './SmartImage';
 import styles from './workspace.module.css';
 
 interface Props {
@@ -18,6 +19,16 @@ interface Props {
 }
 
 const MAX_REVISIONS = 2;
+
+/** A file that is being uploaded right now: shown inside its slot / row so it never looks empty. */
+interface PendingUpload {
+  id: string;
+  kind: 'brief' | 'design';
+  slide?: number;
+  name: string;
+  previewUrl?: string;
+  stage: string;
+}
 const emptySlide = (position: number): Slide => ({ position, headline: '', body: '' });
 
 export default function FeedSheet({ slug, number, role, onClose, onChanged, onSeen }: Props) {
@@ -32,6 +43,7 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
   const [comment, setComment] = useState('');
   const [toClient, setToClient] = useState(false);
   const [closing, setClosing] = useState(false);
+  const [pending, setPending] = useState<PendingUpload[]>([]);
   const [linkLabel, setLinkLabel] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [zoom, setZoom] = useState<FeedFile | null>(null);
@@ -167,8 +179,24 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
 
   const upload = (kind: 'brief' | 'design', files: FileList | null, slide?: number) => {
     if (!files?.length) return;
+    const list = Array.from(files);
+    const items: PendingUpload[] = list.map(f => ({
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      kind, slide, name: f.name, stage: 'Menunggu…',
+      // Show the picked image straight away, dimmed, while it uploads.
+      previewUrl: f.type.startsWith('image/') ? URL.createObjectURL(f) : undefined,
+    }));
+    setPending(p => [...p, ...items]);
+
     run(`upload-${kind}`, async () => {
-      for (const file of Array.from(files)) await uploadFeedFile(slug, number, file, kind, slide);
+      for (let i = 0; i < list.length; i++) {
+        await uploadFeedFile(slug, number, list[i], kind, slide, stage =>
+          setPending(p => p.map(x => (x.id === items[i].id ? { ...x, stage } : x))));
+      }
+    }).finally(() => {
+      // Removed only after the list reloaded, so the slot goes straight from "uploading" to the real file.
+      items.forEach(it => it.previewUrl && URL.revokeObjectURL(it.previewUrl));
+      setPending(p => p.filter(x => !items.some(it => it.id === x.id)));
     });
   };
 
@@ -366,8 +394,17 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>File brief</h3>
         <div className={styles.group}>
-          {briefFiles.length === 0 && <span className={`${styles.muted} ${styles.small}`}>Belum ada file.</span>}
+          {briefFiles.length === 0 && pending.every(p => p.kind !== 'brief') && (
+            <span className={`${styles.muted} ${styles.small}`}>Belum ada file.</span>
+          )}
           {briefFiles.map(f => <FileRow key={f.id} slug={slug} file={f} />)}
+          {pending.filter(p => p.kind === 'brief').map(p => (
+            <div key={p.id} className={`${styles.fileRow} ${styles.fileRowPending}`} role="status">
+              <span className={styles.spinner} aria-hidden />
+              <span className={styles.fileName}>{p.name}</span>
+              <span className={styles.fileMeta}>{p.stage}</span>
+            </div>
+          ))}
           {canUploadBrief && (
             <>
               <input ref={briefInput} type="file" multiple hidden
@@ -515,6 +552,7 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
                   slug={slug} title={`Versi ${open} · sedang dikerjakan`} slideCount={slideCount}
                   files={designFiles.filter(f => f.version === open)}
                   canUpload busy={busy === 'upload-design'} onZoom={setZoom}
+                  pending={pending.filter(p => p.kind === 'design')}
                   onPick={s => { uploadSlide.current = s; designInput.current?.click(); }}
                 />
               )}
@@ -618,8 +656,7 @@ export default function FeedSheet({ slug, number, role, onClose, onChanged, onSe
 
       {zoom && (
         <div className={styles.lightbox} onClick={() => setZoom(null)} role="dialog" aria-label="Pratinjau desain">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={fileUrl(slug, zoom.id)} alt={zoom.file_name} onClick={e => e.stopPropagation()} />
+          <SmartImage mode="flow" src={fileUrl(slug, zoom.id)} alt={zoom.file_name} onClick={e => e.stopPropagation()} />
           <div className={styles.lightboxBar} onClick={e => e.stopPropagation()}>
             <span className={`${styles.small} ${styles.muted}`}>
               {zoom.file_name}{zoom.size_bytes ? ` · asli ${fmtSize(zoom.size_bytes)}` : ''}
@@ -686,10 +723,7 @@ function FileRow({ slug, file }: { slug: string; file: FeedFile }) {
 
       {open && (
         <div className={styles.viewer}>
-          {kind === 'image' && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={fileUrl(slug, file.id)} alt={file.file_name} />
-          )}
+          {kind === 'image' && <SmartImage mode="flow" src={fileUrl(slug, file.id)} alt={file.file_name} />}
           {kind === 'pdf' && (
             <>
               <iframe src={fileUrl(slug, file.id)} title={file.file_name} className={styles.viewerFrame} />
@@ -718,11 +752,12 @@ function FileRow({ slug, file }: { slug: string; file: FeedFile }) {
 }
 
 function VersionBlock({
-  slug, title, slideCount, files, canUpload, canDownload, busy, onPick, onZoom,
+  slug, title, slideCount, files, canUpload, canDownload, busy, onPick, onZoom, pending,
 }: {
   slug: string; title: string; slideCount: number; files: FeedFile[];
   canUpload?: boolean; canDownload?: boolean; busy?: boolean;
   onPick?: (slide: number) => void; onZoom?: (file: FeedFile) => void;
+  pending?: PendingUpload[];
 }) {
   return (
     <div className={styles.group}>
@@ -730,12 +765,29 @@ function VersionBlock({
       <div className={styles.thumbs}>
         {Array.from({ length: slideCount }, (_, i) => i + 1).map(slide => {
           const f = files.find(x => x.slide === slide);
+          const up = pending?.find(x => x.slide === slide);
+          if (up) {
+            // The card itself shows the upload: the picked image (dimmed), a spinner and the current step.
+            return (
+              <div key={slide} className={`${styles.thumb} ${styles.thumbPending}`} role="status" aria-live="polite">
+                {up.previewUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={up.previewUrl} alt="" />
+                )}
+                <span className={styles.thumbTag}>Slide {slide}</span>
+                <div className={styles.uploadOverlay}>
+                  <span className={`${styles.spinner} ${styles.spinnerLg}`} aria-hidden />
+                  <span className={styles.uploadStage}>{up.stage}</span>
+                </div>
+                <span className={styles.indeterminate} aria-hidden />
+              </div>
+            );
+          }
           if (f) {
             return (
               <div key={slide} className={styles.thumb}>
                 {isImage(f.mime_type, f.file_name)
-                  // eslint-disable-next-line @next/next/no-img-element
-                  ? <img src={fileUrl(slug, f.id)} alt={`Slide ${slide}`} loading="lazy" />
+                  ? <SmartImage src={fileUrl(slug, f.id)} alt={`Slide ${slide}`} />
                   : <span>{f.file_name}</span>}
                 <span className={styles.thumbTag}>Slide {slide}</span>
                 {onZoom && isImage(f.mime_type, f.file_name) && (

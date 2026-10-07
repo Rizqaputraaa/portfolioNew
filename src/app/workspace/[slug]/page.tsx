@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, FormEvent } from 'react';
 import { useParams } from 'next/navigation';
 import { api, ApiError, fileUrl } from './api';
 import FeedSheet from './FeedSheet';
+import SmartImage from './SmartImage';
 import {
   ROLE_LABEL, STATUS_LABEL, STATUS_ORDER,
   type FeedSummary, type ProjectInfo, type Role,
@@ -164,8 +165,7 @@ export default function WorkspacePage() {
                 aria-label={`Feed ${n}${feed.unread ? ', ada yang baru' : ''}`}>
                 {feed.unread && <span className={styles.newDot} aria-hidden />}
                 {feed.cover_file_id && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className={styles.cardImg} src={fileUrl(slug, feed.cover_file_id)} alt="" loading="lazy" />
+                  <SmartImage className={styles.cardImg} src={fileUrl(slug, feed.cover_file_id)} alt="" />
                 )}
                 <span className={styles.cardBody}>
                   <span>

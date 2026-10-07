@@ -53,11 +53,13 @@ export async function uploadFeedFile(
   file: File,
   kind: 'brief' | 'design',
   slide?: number,
+  onStage?: (stage: string) => void,
 ) {
   const supabase = getSupabase();
   if (!supabase) throw new ApiError('Storage belum siap', 500);
   const base = `/feeds/${feedNumber}/files`;
 
+  onStage?.(kind === 'design' ? 'Menyiapkan gambar…' : 'Menyiapkan…');
   const previewBlob = kind === 'design' ? await makePreview(file) : null;
 
   const signed = await api<{ path: string; token: string; preview: { path: string; token: string } | null }>(
@@ -68,16 +70,19 @@ export async function uploadFeedFile(
   );
 
   const bucket = supabase.storage.from('workspace');
+  onStage?.(`Mengunggah ${fmtSize(file.size)}…`);
   const { error } = await bucket.uploadToSignedUrl(signed.path, signed.token, file);
   if (error) throw new ApiError(error.message, 500);
 
   if (previewBlob && signed.preview) {
+    onStage?.('Membuat preview…');
     const { error: pErr } = await bucket.uploadToSignedUrl(signed.preview.path, signed.preview.token, previewBlob, {
       contentType: 'image/webp',
     });
     if (pErr) throw new ApiError(pErr.message, 500);
   }
 
+  onStage?.('Menyimpan…');
   await api(slug, base, {
     method: 'POST',
     json: {
