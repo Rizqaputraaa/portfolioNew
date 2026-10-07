@@ -15,5 +15,11 @@ export const viewport: Viewport = {
 };
 
 export default function WorkspaceLayout({ children }: { children: React.ReactNode }) {
-  return <>{children}</>;
+  return (
+    <>
+      {/* iOS Safari lets the whole page pan sideways if anything overflows: lock it on workspace pages only */}
+      <style>{`html,body{overflow-x:hidden;max-width:100%}`}</style>
+      {children}
+    </>
+  );
 }
