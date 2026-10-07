@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { api, copyText, fileUrl, fmtDate, fmtSize, isImage, uploadFeedFile } from './api';
 import {
-  ROLE_LABEL, STATUS_LABEL,
+  STATUS_LABEL,
   type BriefRevision, type FeedDetail, type FeedFile, type Role, type Slide,
 } from '@/lib/workspace/types';
 import SmartImage from './SmartImage';
@@ -41,8 +41,6 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
   const [error, setError] = useState('');
   const [revisionNote, setRevisionNote] = useState('');
   const [showRevision, setShowRevision] = useState(false);
-  const [comment, setComment] = useState('');
-  const [toClient, setToClient] = useState(false);
   const [closing, setClosing] = useState(false);
   const [pending, setPending] = useState<PendingUpload[]>([]);
   const [resultLabel, setResultLabel] = useState('');
@@ -147,6 +145,9 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
   const open = detail.version + 1; // version being worked on
   // In review the client proposes changes; Danta decides what lands in the brief.
   const clientRevising = role === 'client' && status === 'brief_review';
+  // Danta's "Minta revisi" notes (newest first): what the designer has to fix.
+  const revisionNotes = detail.comments.filter(c => c.kind === 'revision').reverse();
+  const uploadingDesign = pending.some(p => p.kind === 'design');
   const referenceLinks = detail.links.filter(l => l.kind !== 'result');
   const resultLinks = detail.links.filter(l => l.kind === 'result');
   // The designer and Danta add result links, but only once the brief has gone to the designer.
@@ -203,34 +204,31 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
     }));
     setPending(p => [...p, ...items]);
 
-    run(`upload-${kind}`, async () => {
-      for (let i = 0; i < list.length; i++) {
-        await uploadFeedFile(slug, number, list[i], kind, slide, stage =>
-          setPending(p => p.map(x => (x.id === items[i].id ? { ...x, stage } : x))));
+    setError('');
+
+    // Deliberately not tied to the shared "busy" flag: another slide can be started while this one uploads.
+    void (async () => {
+      try {
+        for (let i = 0; i < list.length; i++) {
+          await uploadFeedFile(slug, number, list[i], kind, slide, stage =>
+            setPending(p => p.map(x => (x.id === items[i].id ? { ...x, stage } : x))));
+        }
+      } catch (e) {
+        setError((e as Error).message);
+      } finally {
+        // Reload first, then drop the placeholder, so the slot goes straight from "uploading" to the real file.
+        await load(true);
+        onChanged();
+        items.forEach(it => it.previewUrl && URL.revokeObjectURL(it.previewUrl));
+        setPending(p => p.filter(x => !items.some(it => it.id === x.id)));
       }
-    }).finally(() => {
-      // Removed only after the list reloaded, so the slot goes straight from "uploading" to the real file.
-      items.forEach(it => it.previewUrl && URL.revokeObjectURL(it.previewUrl));
-      setPending(p => p.filter(x => !items.some(it => it.id === x.id)));
-    });
+    })();
   };
 
   const copyLink = async (id: string, url: string) => {
     await copyText(url);
     setCopiedId(id);
     window.setTimeout(() => setCopiedId(cur => (cur === id ? '' : cur)), 1800);
-  };
-
-  const sendComment = () => {
-    const note = comment.trim();
-    if (!note) return;
-    run('comment', async () => {
-      await api(slug, `/feeds/${number}/action`, {
-        method: 'POST',
-        json: { action: 'comment', note, visibility: toClient ? 'all' : 'internal' },
-      });
-      setComment('');
-    });
   };
 
   const briefSection = (
@@ -431,7 +429,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
                 onChange={e => { upload('brief', e.target.files); e.target.value = ''; }} />
               <button className={`${styles.btn} ${styles.btnTint} ${styles.btnSm}`} style={{ alignSelf: 'flex-start' }}
                 disabled={!!busy} onClick={() => briefInput.current?.click()}>
-                {busy === 'upload-brief' ? 'Mengunggah…' : '+ Upload file'}
+                {pending.some(p => p.kind === 'brief') ? 'Mengunggah…' : '+ Upload file'}
               </button>
             </>
           )}
@@ -495,8 +493,8 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
             {working && (
               <button
                 className={styles.btn}
-                disabled={!!busy || !openHasFiles}
-                title={openHasFiles ? '' : 'Upload minimal 1 file desain dulu'}
+                disabled={!!busy || !openHasFiles || uploadingDesign}
+                title={uploadingDesign ? 'Tunggu unggahan selesai dulu' : openHasFiles ? '' : 'Upload minimal 1 file desain dulu'}
                 onClick={() => doAction('send_to_review')}
               >
                 Kirim ke review (v{open})
@@ -571,6 +569,23 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
           {revisionStatus}
           {materialSection}
 
+          {/* ── Revision notes ─────────────────────────────────────── */}
+          {revisionNotes.length > 0 && (
+            <section className={styles.section}>
+              <h3 className={styles.sectionTitle}>Catatan revisi</h3>
+              <div className={styles.group}>
+                {revisionNotes.map((c, i) => (
+                  <div key={c.id} className={`${styles.revisionNote} ${i === 0 ? styles.revisionNoteLatest : ''}`}>
+                    <div className={styles.revisionMeta}>
+                      Revisi untuk v{c.version ?? '?'} · {fmtDate(c.created_at)}
+                    </div>
+                    <div className={styles.revisionText}>{c.body}</div>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* ── Design versions ────────────────────────────────────── */}
           {(isTeam || versions.length > 0) && (
             <section className={styles.section}>
@@ -582,7 +597,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
                 <VersionBlock
                   slug={slug} title={`Versi ${open} · sedang dikerjakan`} slideCount={slideCount}
                   files={designFiles.filter(f => f.version === open)}
-                  canUpload busy={busy === 'upload-design'} onZoom={setZoom}
+                  canUpload onZoom={setZoom}
                   pending={pending.filter(p => p.kind === 'design')}
                   onPick={s => { uploadSlide.current = s; designInput.current?.click(); }}
                 />
@@ -661,58 +676,6 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
               </div>
             </section>
           )}
-
-          {/* ── Comments ───────────────────────────────────────────── */}
-          <section className={styles.section}>
-            <h3 className={styles.sectionTitle}>Diskusi</h3>
-            <div className={styles.chat}>
-              {detail.comments.map((c, idx) => {
-                if (c.kind === 'system') {
-                  return <div key={c.id} className={styles.system}>{c.body} · {fmtDate(c.created_at)}</div>;
-                }
-                const mine = c.role === role;
-                const cls = [
-                  styles.bubble,
-                  mine && c.kind === 'comment' ? styles.bubbleRight : '',
-                  c.kind === 'revision' ? styles.bubbleRevision : '',
-                  c.kind === 'approval' ? styles.bubbleApproval : '',
-                ].join(' ');
-                return (
-                  <div key={c.id} className={cls}
-                    style={{ ...(mine ? { alignSelf: 'flex-end' } : {}), '--i': idx } as React.CSSProperties}>
-                    <div className={styles.bubbleMeta}>
-                      {ROLE_LABEL[c.role as Role] ?? c.role}
-                      {c.kind === 'revision' && ' · revisi'}
-                      {c.kind === 'approval' && ' · disetujui'}
-                      {' · '}{fmtDate(c.created_at)}
-                      {isTeam && c.visibility === 'internal' && <span className={styles.internalTag}>internal</span>}
-                    </div>
-                    {c.body}
-                  </div>
-                );
-              })}
-              {detail.comments.length === 0 && <div className={styles.empty}>Belum ada diskusi.</div>}
-            </div>
-
-            <div className={styles.composer}>
-              <textarea
-                className={styles.textarea}
-                rows={1}
-                value={comment}
-                placeholder="Tulis komentar…"
-                aria-label="Komentar"
-                onChange={e => setComment(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) sendComment(); }}
-              />
-              <button className={styles.btn} disabled={!comment.trim() || !!busy} onClick={sendComment}>Kirim</button>
-            </div>
-            {role === 'gozi' && (
-              <label className={`${styles.muted} ${styles.small}`} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-                <input type="checkbox" checked={toClient} onChange={e => setToClient(e.target.checked)} />
-                Tampilkan komentar ini ke client
-              </label>
-            )}
-          </section>
         </div>
       </aside>
 
