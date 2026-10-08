@@ -180,3 +180,12 @@ notify pgrst, 'reload schema';
 -- himself (a WhatsApp message with the result link), and nobody from the client side signs in.
 alter table public.ws_projects add column if not exists client_enabled boolean not null default true;
 notify pgrst, 'reload schema';
+
+-- v8: owner dashboard (/admin/workspaces): client details shown on the client cards.
+alter table public.ws_projects add column if not exists client_name text;
+alter table public.ws_projects add column if not exists instagram text;                  -- without the @
+alter table public.ws_projects add column if not exists pack_number integer not null default 1;
+alter table public.ws_projects add column if not exists price numeric;                   -- price of one pack, for invoices later
+alter table public.ws_projects add column if not exists danta_enabled boolean not null default true;
+update public.ws_projects set client_name = 'Garage Padel' where slug = 'padel' and client_name is null;
+notify pgrst, 'reload schema';

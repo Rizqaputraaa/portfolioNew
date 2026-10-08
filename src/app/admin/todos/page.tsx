@@ -139,6 +139,12 @@ export default function TodosPage() {
 
   useEffect(() => { load(); }, [load]);
 
+  // A todo added from the workspace header should show up here without a reload.
+  useEffect(() => {
+    window.addEventListener('workspace:changed', load);
+    return () => window.removeEventListener('workspace:changed', load);
+  }, [load]);
+
   const handleAdd = async (e: FormEvent) => {
     e.preventDefault();
     if (!text.trim() || !supabase) return;

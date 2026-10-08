@@ -32,7 +32,7 @@ export default function AdminLoginPage() {
       return;
     }
 
-    router.push('/admin/projects');
+    router.push('/admin/workspaces');
   };
 
   return (

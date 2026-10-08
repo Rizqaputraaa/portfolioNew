@@ -345,6 +345,6 @@
   }
 
   .table {
-    min-width: 560px; /* scroll horizontally inside .tableWrapper instead of squashing columns */
+    min-width: 760px; /* scroll horizontally inside .tableWrapper instead of squashing columns */
   }
 }
