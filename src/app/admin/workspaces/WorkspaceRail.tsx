@@ -11,16 +11,24 @@ const icon = {
   strokeWidth: 1.8, strokeLinecap: 'round' as const, strokeLinejoin: 'round' as const,
 };
 
-// 1 = the portfolio's own admin pages, 2 = tools. 3–5 are reserved (invoices, posting calendar, archive).
+// Home, then the portfolio's own admin pages (briefcase), then tools. Reserved for later: invoices, posting calendar, archive.
 const ITEMS = [
+  {
+    href: '/admin/workspaces',
+    label: 'Home',
+    active: (p: string) => p === '/admin/workspaces',
+    svg: <svg {...icon}><path d="M3 11l9-8 9 8" /><path d="M5 10v10h5v-6h4v6h5V10" /></svg>,
+  },
   {
     href: '/admin/projects',
     label: 'Admin portfolio',
-    svg: <svg {...icon}><rect x="3" y="3" width="7" height="7" rx="1.5" /><rect x="14" y="3" width="7" height="7" rx="1.5" /><rect x="3" y="14" width="7" height="7" rx="1.5" /><rect x="14" y="14" width="7" height="7" rx="1.5" /></svg>,
+    active: isPortfolioPath,
+    svg: <svg {...icon}><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M3 13h18" /></svg>,
   },
   {
     href: '/admin/workspaces/tools',
     label: 'Tools',
+    active: isToolsPath,
     svg: <svg {...icon}><path d="M14.7 6.3a4 4 0 0 0-5 5L3 18l3 3 6.7-6.7a4 4 0 0 0 5-5l-2.5 2.5-2.7-.7-.7-2.7 2.5-2.5z" /></svg>,
   },
 ];
@@ -42,7 +50,8 @@ export default function WorkspaceRail() {
           <Link
             key={item.href}
             href={item.href}
-            className={`${styles.railBtn} ${(item.href === '/admin/projects' ? isPortfolioPath(pathname) : isToolsPath(pathname)) ? styles.railActive : ''}`}
+            className={`${styles.railBtn} ${item.active(pathname) ? styles.railActive : ''}`}
+            aria-current={item.active(pathname) ? 'page' : undefined}
             aria-label={item.label}
           >
             {item.svg}

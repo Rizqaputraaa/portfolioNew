@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useAdminAuth } from '../useAdminAuth';
 import { useAdminCall } from './useAdminCall';
 import { WORKSPACE_CHANGED } from './nav';
+import EditClient from './EditClient';
 import styles from './workspaces.module.css';
 
 interface ProjectCard {
@@ -17,6 +17,8 @@ interface ProjectCard {
   pack_number: number;
   target_feeds: number;
   month_label: string | null;
+  price: number | null;
+  avatar_url: string | null;
   danta_enabled: boolean;
   client_enabled: boolean;
   counts: Record<string, number>;
@@ -40,11 +42,11 @@ const avatarColor = (key: string) => {
 export default function WorkspaceDashboard() {
   const { supabase } = useAdminAuth();
   const call = useAdminCall();
-  const router = useRouter();
   const [data, setData] = useState<Overview | null>(null);
   const [error, setError] = useState('');
   const [filter, setFilter] = useState<'all' | 'active' | 'done'>('all');
   const [opening, setOpening] = useState('');
+  const [editing, setEditing] = useState<ProjectCard | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -65,15 +67,27 @@ export default function WorkspaceDashboard() {
     return () => window.removeEventListener(WORKSPACE_CHANGED, load);
   }, [load]);
 
+  // A client's workspace opens in a new tab. The tab is created right on the click (browsers block popups that
+  // wait for a network call), then pointed at the workspace once the server has set the designer session.
   const open = async (slug: string) => {
+    const tab = window.open('about:blank', '_blank');
+    tab?.document.write('<title>Workspace</title><body style="margin:0;background:#0C0C0C"></body>');
     setOpening(slug);
     try {
       const { url } = await call<{ url: string }>('/api/admin/ws/open', { method: 'POST', body: JSON.stringify({ slug }) });
-      router.push(url);
+      if (tab) tab.location.href = url;
+      else window.location.href = url; // popups blocked: fall back to this tab
     } catch (e) {
+      tab?.close();
       setError((e as Error).message);
-      setOpening('');
     }
+    setOpening('');
+  };
+
+  const saveClient = async (slug: string, body: Record<string, unknown>) => {
+    await call(`/api/admin/ws/projects/${slug}`, { method: 'PATCH', body: JSON.stringify(body) });
+    setEditing(null);
+    await load();
   };
 
   const projects = useMemo(() => {
@@ -161,9 +175,14 @@ export default function WorkspaceDashboard() {
                     </button>
 
                     <div className={styles.who}>
-                      <span className={styles.avatar} style={{ background: avatarColor(p.slug) }} aria-hidden>
-                        {name.trim().charAt(0).toUpperCase()}
-                      </span>
+                      {p.avatar_url
+                        // eslint-disable-next-line @next/next/no-img-element
+                        ? <img className={styles.avatarImg} src={p.avatar_url} alt="" />
+                        : (
+                          <span className={styles.avatar} style={{ background: avatarColor(p.slug) }} aria-hidden>
+                            {name.trim().charAt(0).toUpperCase()}
+                          </span>
+                        )}
                       <div style={{ minWidth: 0 }}>
                         <div className={styles.username}>{p.instagram ? `@${p.instagram}` : name}</div>
                         <div className={styles.sub}>{p.instagram ? name : 'Instagram belum diisi'}</div>
@@ -192,6 +211,10 @@ export default function WorkspaceDashboard() {
                     <div className={styles.tags}>
                       <span className={`${styles.tag} ${p.danta_enabled ? '' : styles.tagMuted}`}>{p.danta_enabled ? 'Danta' : 'Tanpa Danta'}</span>
                       {p.client_enabled && <span className={styles.tag}>Client login</span>}
+                      <button className={styles.editBtn} onClick={() => setEditing(p)} aria-label={`Edit ${name}`}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></svg>
+                        Edit
+                      </button>
                     </div>
                   </article>
                 );
@@ -200,6 +223,8 @@ export default function WorkspaceDashboard() {
           </section>
         </>
       )}
+
+      {editing && <EditClient client={editing} onClose={() => setEditing(null)} onSave={saveClient} />}
     </>
   );
 }

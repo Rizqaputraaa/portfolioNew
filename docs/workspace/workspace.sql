@@ -189,3 +189,7 @@ alter table public.ws_projects add column if not exists price numeric;          
 alter table public.ws_projects add column if not exists danta_enabled boolean not null default true;
 update public.ws_projects set client_name = 'Garage Padel' where slug = 'padel' and client_name is null;
 notify pgrst, 'reload schema';
+
+-- v9: client photo shown on the owner dashboard (stored in the private "workspace" bucket under avatars/).
+alter table public.ws_projects add column if not exists avatar_path text;
+notify pgrst, 'reload schema';
