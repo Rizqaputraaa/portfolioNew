@@ -529,3 +529,32 @@
 }
 .editBtn:hover { color: var(--white); border-color: #3A3A3A; background: var(--bg-3); }
 .editBtn:active { transform: scale(0.95); }
+
+/* ── Aset Raket ────────────────────────────────────────────────────────── */
+a.tool { color: inherit; transition: transform 0.35s var(--spring), border-color 0.2s var(--ease); }
+a.tool:hover { transform: translateY(-3px); border-color: #3A3A3A; }
+
+.batchList { display: flex; flex-direction: column; gap: 12px; }
+.batch { border: 1px solid var(--line); border-radius: 18px; background: var(--bg-1); overflow: hidden; animation: cardIn 0.5s var(--spring) both; transition: border-color 0.2s var(--ease); }
+.batchOpen { border-color: #3A3A3A; }
+.batchHead { width: 100%; display: flex; align-items: center; gap: 12px; padding: 16px 18px; border: none; background: transparent; color: var(--white); cursor: pointer; text-align: left; }
+.batchTitle { font-family: var(--font); font-size: 16px; font-weight: 700; letter-spacing: 0.03em; }
+.batchBody { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 16px; animation: fadeUp 0.4s var(--spring) both; }
+.batchTools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+
+.feedBlock { border: 1px solid var(--line); border-radius: 14px; background: var(--bg-2); padding: 6px 14px 8px; }
+.feedBlockHead { display: flex; align-items: center; justify-content: space-between; padding: 8px 0 4px; }
+.feedBlockTitle { margin: 0; font-family: var(--font); font-size: 14px; letter-spacing: 0.06em; font-weight: 900; }
+.rackRow { display: flex; align-items: center; gap: 10px; padding: 9px 0; min-width: 0; }
+.rackRow + .rackRow { border-top: 1px solid var(--line); }
+.rackNum { width: 22px; flex-shrink: 0; color: var(--dim); font-size: 13px; text-align: right; font-variant-numeric: tabular-nums; }
+.rackName { flex: 1; min-width: 0; font-size: 15px; overflow-wrap: anywhere; }
+.rackPrice { white-space: nowrap; font-size: 15px; font-variant-numeric: tabular-nums; }
+.rackPrice s { color: var(--dim); margin-right: 4px; font-size: 13px; }
+.rackPrice b { color: var(--accent-text); }
+
+@media (max-width: 860px) {
+  .rackRow { flex-wrap: wrap; row-gap: 2px; }
+  .rackName { flex-basis: calc(100% - 40px); }
+  .batchHead { flex-wrap: wrap; }
+}

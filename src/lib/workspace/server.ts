@@ -30,8 +30,15 @@ interface Session {
   slug: string;
   role: Role;
   name: string;
+  lead?: boolean; // designer in a project without Danta: also holds Danta's powers
   exp: number;   // unix seconds
 }
+
+/** Danta, or the designer standing in for Danta in a project that has none. */
+export const isLead = (s: Pick<Session, 'role' | 'lead'>) => s.role === 'gozi' || (s.role === 'designer' && !!s.lead);
+
+/** Does this session count as the given role? (a lead designer also counts as Danta) */
+export const hasRole = (s: Pick<Session, 'role' | 'lead'>, role: Role) => s.role === role || (role === 'gozi' && isLead(s));
 
 function secret(): string {
   return process.env.WORKSPACE_SECRET ?? process.env.SUPABASE_SERVICE_ROLE_KEY ?? '';
@@ -100,7 +107,7 @@ export async function checkLogin(slug: string, pin: string) {
   if (!client) return { error: 'Server belum siap', status: 500 as const };
 
   const { data: project } = await client
-    .from('ws_projects').select('id, slug, name, failed_attempts, locked_until, client_enabled').eq('slug', slug).maybeSingle();
+    .from('ws_projects').select('id, slug, name, failed_attempts, locked_until, client_enabled, danta_enabled').eq('slug', slug).maybeSingle();
   if (!project) return { error: 'Workspace tidak ditemukan', status: 404 as const };
 
   if (project.locked_until && new Date(project.locked_until) > new Date()) {

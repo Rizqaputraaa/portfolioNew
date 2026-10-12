@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { briefChanged, db, fail, requireSession, touch } from '@/lib/workspace/server';
+import { briefChanged, db, fail, isLead, requireSession, touch } from '@/lib/workspace/server';
 import type { Role } from '@/lib/workspace/types';
 
 type Ctx = { params: { slug: string; number: string } };
@@ -12,8 +12,8 @@ const MAX_LINKS = 20;
  *  - reference: material for the brief (Drive, Instagram …) — Danta and the client add them
  *  - result:    where the finished files can be copied from  — the designer and Danta add them
  */
-const canManage = (kind: Kind, role: Role) =>
-  kind === 'result' ? role === 'designer' || role === 'gozi' : role === 'gozi' || role === 'client';
+const canManage = (kind: Kind, role: Role, lead: boolean) =>
+  kind === 'result' ? role === 'designer' || role === 'gozi' : role === 'gozi' || role === 'client' || lead;
 
 async function loadFeed(req: NextRequest, ctx: Ctx) {
   const session = requireSession(req, ctx.params.slug);
@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const kind: Kind = body.kind === 'result' ? 'result' : 'reference';
   const role = r.session.role as Role;
 
-  if (!canManage(kind, role)) {
+  if (!canManage(kind, role, isLead(r.session))) {
     return fail(kind === 'result' ? 'Link hasil ditambahkan oleh designer atau Danta' : 'Link referensi ditambahkan oleh Danta atau client', 403);
   }
   const isDraft = r.feed.status === 'brief' && r.feed.created_by === 'gozi';
@@ -95,7 +95,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   if (!link) return fail('Link tidak ditemukan', 404);
 
   const role = r.session.role as Role;
-  if (!canManage(link.kind as Kind, role)) return fail('Tidak punya akses menghapus link ini', 403);
+  if (!canManage(link.kind as Kind, role, isLead(r.session))) return fail('Tidak punya akses menghapus link ini', 403);
   // Danta can remove any reference link; the client only their own.
   if (link.kind === 'reference' && role === 'client' && link.added_by !== 'client') {
     return fail('Tidak punya akses menghapus link ini', 403);

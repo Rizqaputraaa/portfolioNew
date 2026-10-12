@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { TRANSITIONS, db, fail, requireSession, touch } from '@/lib/workspace/server';
+import { TRANSITIONS, db, fail, hasRole, isLead, requireSession, touch } from '@/lib/workspace/server';
 import { lastSentVersion } from '@/lib/workspace/feeds';
 import { STATUS_LABEL } from '@/lib/workspace/types';
 import type { FeedStatus } from '@/lib/workspace/types';
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     // Client comments are always visible to everyone; Danta picks; designer stays internal.
     const visibility =
       session.role === 'client' ? 'all'
-      : session.role === 'gozi' && body.visibility === 'all' ? 'all'
+      : isLead(session) && body.visibility === 'all' ? 'all'
       : 'internal';
     await client.from('ws_comments').insert({
       feed_id: feed.id, role: session.role, kind: 'comment', visibility, body: note,
@@ -60,7 +60,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   /* ── Status transition ─────────────────────────────────────────── */
   const rule = TRANSITIONS[action];
   if (!rule) return fail('Aksi tidak dikenal');
-  if (!rule.roles.includes(session.role)) return fail('Role kamu tidak bisa melakukan aksi ini', 403);
+  if (!rule.roles.some(r => hasRole(session, r))) return fail('Role kamu tidak bisa melakukan aksi ini', 403);
   if (!rule.from.includes(feed.status as FeedStatus)) {
     return fail(`Aksi ini tidak bisa dari status "${STATUS_LABEL[feed.status as FeedStatus]}"`, 409);
   }

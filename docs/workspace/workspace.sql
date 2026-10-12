@@ -193,3 +193,33 @@ notify pgrst, 'reload schema';
 -- v9: client photo shown on the owner dashboard (stored in the private "workspace" bucket under avatars/).
 alter table public.ws_projects add column if not exists avatar_path text;
 notify pgrst, 'reload schema';
+
+-- v10: structured promo lists. A client fills a form (/f/<token>) instead of sending a messy WhatsApp / Word list.
+-- Every project gets a secret form token; a submission becomes one batch with its items.
+alter table public.ws_projects add column if not exists form_token text;
+update public.ws_projects set form_token = substr(replace(gen_random_uuid()::text, '-', ''), 1, 14) where form_token is null;
+create unique index if not exists ws_projects_form_token_key on public.ws_projects (form_token);
+
+create table if not exists public.ws_promo_batches (
+  id          uuid primary key default gen_random_uuid(),
+  project_id  uuid not null references public.ws_projects(id) on delete cascade,
+  title       text not null,
+  status      text not null default 'new' check (status in ('new', 'processed')),
+  created_at  timestamptz not null default now()
+);
+create index if not exists ws_promo_batches_project_idx on public.ws_promo_batches (project_id, created_at desc);
+
+create table if not exists public.ws_promo_items (
+  id              uuid primary key default gen_random_uuid(),
+  batch_id        uuid not null references public.ws_promo_batches(id) on delete cascade,
+  position        integer not null,
+  name            text not null,
+  price_original  numeric,                    -- optional "harga awal"
+  price_promo     numeric not null,
+  image_url       text
+);
+create index if not exists ws_promo_items_batch_idx on public.ws_promo_items (batch_id, position);
+
+alter table public.ws_promo_batches enable row level security;
+alter table public.ws_promo_items   enable row level security;
+notify pgrst, 'reload schema';

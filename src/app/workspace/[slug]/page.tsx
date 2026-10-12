@@ -14,7 +14,7 @@ import styles from './workspace.module.css';
 
 interface Overview {
   project: ProjectInfo;
-  me: { role: Role; name: string };
+  me: { role: Role; name: string; lead?: boolean };
   feeds: FeedSummary[];
 }
 
@@ -94,7 +94,7 @@ export default function WorkspacePage() {
   const unreadCount = feeds.filter(f => f.unread).length;
   // Without a client there is no "Review Brief" step to show.
   const statuses = STATUS_ORDER.filter(s => project.client_enabled !== false || s !== 'brief_review');
-  const canCreate = me.role !== 'designer';
+  const canCreate = me.role !== 'designer' || !!me.lead;
   const nextNumber = feeds.length ? Math.max(...feeds.map(f => f.number)) + 1 : 1;
 
   return (
@@ -197,6 +197,7 @@ export default function WorkspacePage() {
           slug={slug}
           number={open}
           role={me.role}
+          lead={!!me.lead}
           clientEnabled={project.client_enabled !== false}
           onClose={() => setOpen(null)}
           onChanged={load}

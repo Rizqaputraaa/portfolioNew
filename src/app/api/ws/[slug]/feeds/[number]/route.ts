@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { briefChanged, db, fail, markSeen, requireSession, touch } from '@/lib/workspace/server';
+import { briefChanged, db, fail, isLead, markSeen, requireSession, touch } from '@/lib/workspace/server';
 import { getFeedDetail } from '@/lib/workspace/feeds';
 import { MAX_SLIDES } from '@/lib/workspace/types';
 
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const session = requireSession(req, params.slug);
   if (!session) return fail('Belum login', 401);
-  if (session.role === 'designer') return fail('Tidak punya akses mengubah brief', 403);
+  if (session.role === 'designer' && !isLead(session)) return fail('Tidak punya akses mengubah brief', 403);
   const client = db();
   if (!client) return fail('Server belum siap', 500);
 
@@ -45,7 +45,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
     patch.title = body.title.trim();
   }
   if (typeof body.caption === 'string') patch.caption = body.caption;
-  if (session.role === 'gozi' && 'post_date' in body) patch.post_date = body.post_date || null;
+  if (isLead(session) && 'post_date' in body) patch.post_date = body.post_date || null;
 
   const { error } = await client.from('ws_feeds').update(patch).eq('id', feed.id);
   if (error) return fail(error.message, 500);

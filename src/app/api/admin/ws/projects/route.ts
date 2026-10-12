@@ -1,4 +1,4 @@
-import { randomInt } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/workspace/admin';
 import { hashPin } from '@/lib/workspace/server';
@@ -27,8 +27,7 @@ export async function POST(req: NextRequest) {
   if (!clientName) return fail('Nama client wajib diisi');
   if (!Number.isInteger(feeds) || feeds < 1 || feeds > 60) return fail('Jumlah feed harus 1–60');
   if (price !== null && (!Number.isFinite(price) || price < 0)) return fail('Harga tidak valid');
-  // Projects without Danta need the owner to hold both roles; that is not built yet.
-  if (body.danta === false) return fail('Project tanpa Danta belum tersedia', 409);
+  const danta = body.danta !== false; // without Danta the designer (you) also holds Danta's powers
 
   // Unique, readable address: /w/<slug>
   const base = slugify(instagram || clientName) || 'client';
@@ -48,14 +47,15 @@ export async function POST(req: NextRequest) {
     target_feeds: feeds,
     pack_number: packNumber,
     price,
-    danta_enabled: true,
+    danta_enabled: danta,
+    form_token: randomBytes(7).toString('hex'), // secret link for the client's promo list form
     client_enabled: clientLogin,
   }).select('id').single();
   if (error || !project) return fail(error?.message ?? 'Gagal membuat project', 500);
 
   const members = [
     { role: 'designer', name: 'Designer', label: 'Designer (kamu)' },
-    { role: 'gozi', name: 'Danta', label: 'Danta' },
+    ...(danta ? [{ role: 'gozi', name: 'Danta', label: 'Danta' }] : []),
     ...(clientLogin ? [{ role: 'client', name: 'Client', label: 'Client' }] : []),
   ];
 

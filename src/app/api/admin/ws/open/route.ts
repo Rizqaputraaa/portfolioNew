@@ -9,10 +9,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const slug = String(body.slug ?? '');
-  const { data: project } = await admin.client.from('ws_projects').select('id').eq('slug', slug).maybeSingle();
+  const { data: project } = await admin.client.from('ws_projects').select('id, danta_enabled').eq('slug', slug).maybeSingle();
   if (!project) return NextResponse.json({ error: 'Project tidak ditemukan' }, { status: 404 });
 
   const res = NextResponse.json({ url: `/workspace/${slug}` });
-  setSessionCookie(res, slug, createSessionCookie({ pid: project.id, slug, role: 'designer', name: 'Designer' }));
+  setSessionCookie(res, slug, createSessionCookie({ pid: project.id, slug, role: 'designer', name: 'Designer', lead: project.danta_enabled === false }));
   return res;
 }

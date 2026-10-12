@@ -37,6 +37,7 @@ export function AddClient({ onClose, onCreate }: {
   const [packNumber, setPackNumber] = useState('1');
   const [monthLabel, setMonthLabel] = useState(monthNow());
   const [price, setPrice] = useState('');
+  const [danta, setDanta] = useState(true);
   const [clientLogin, setClientLogin] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -46,7 +47,7 @@ export function AddClient({ onClose, onCreate }: {
     setBusy(true);
     setError('');
     try {
-      await onCreate({ clientName, instagram, feeds: Number(feeds), packNumber: Number(packNumber), monthLabel, price, clientLogin, danta: true });
+      await onCreate({ clientName, instagram, feeds: Number(feeds), packNumber: Number(packNumber), monthLabel, price, clientLogin, danta });
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);
@@ -94,8 +95,15 @@ export function AddClient({ onClose, onCreate }: {
         </div>
 
         <label className={styles.toggle}>
-          <input type="checkbox" checked disabled readOnly />
-          <div><strong>Pakai Danta (perantara brief)</strong><span>Danta menyusun brief dan menyetujui hasil. Mode tanpa Danta menyusul.</span></div>
+          <input type="checkbox" checked={danta} onChange={e => setDanta(e.target.checked)} />
+          <div>
+            <strong>Pakai Danta (perantara brief)</strong>
+            <span>
+              {danta
+                ? 'Danta menyusun brief dan menyetujui hasil.'
+                : 'Tanpa Danta: kamu sendiri yang menyusun brief, mengerjakan desain, lalu menyetujui. Tidak ada PIN Danta.'}
+            </span>
+          </div>
         </label>
         <label className={styles.toggle}>
           <input type="checkbox" checked={clientLogin} onChange={e => setClientLogin(e.target.checked)} />

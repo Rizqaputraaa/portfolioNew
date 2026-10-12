@@ -13,6 +13,7 @@ interface Props {
   slug: string;
   number: number;
   role: Role;
+  lead?: boolean; // designer in a project without Danta
   clientEnabled: boolean;
   onClose: () => void;
   onChanged: () => void;
@@ -32,7 +33,9 @@ interface PendingUpload {
 }
 const emptySlide = (position: number): Slide => ({ position, headline: '', body: '' });
 
-export default function FeedSheet({ slug, number, role, clientEnabled, onClose, onChanged, onSeen }: Props) {
+export default function FeedSheet({ slug, number, role, lead, clientEnabled, onClose, onChanged, onSeen }: Props) {
+  // Danta, or the designer standing in for Danta when the project has none.
+  const isDanta = role === 'gozi' || (role === 'designer' && !!lead);
   const [detail, setDetail] = useState<FeedDetail | null>(null);
   const [title, setTitle] = useState('');
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -139,9 +142,9 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
   const isTeam = role !== 'client';
   // Danta and the client edit the same brief: Danta always, the client once it is sent for review
   // (or when the client started the feed themselves). Only Danta can hand it to the designer.
-  const canEditBrief = role === 'gozi'
+  const canEditBrief = isDanta
     || (role === 'client' && (status === 'brief_review' || (detail.created_by === 'client' && status === 'brief')));
-  const canUploadBrief = role === 'gozi' || (role === 'client' && status !== 'posted');
+  const canUploadBrief = isDanta || (role === 'client' && status !== 'posted');
   const open = detail.version + 1; // version being worked on
   // In review the client proposes changes; Danta decides what lands in the brief.
   const clientRevising = role === 'client' && status === 'brief_review';
@@ -151,7 +154,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
   const referenceLinks = detail.links.filter(l => l.kind !== 'result');
   const resultLinks = detail.links.filter(l => l.kind === 'result');
   // The designer and Danta add result links, but only once the brief has gone to the designer.
-  const canAddResult = (role === 'designer' || role === 'gozi') && status !== 'brief' && status !== 'brief_review';
+  const canAddResult = (role === 'designer' || isDanta) && status !== 'brief' && status !== 'brief_review';
   const feedName = detail.title && !/^Feed \d+$/.test(detail.title) ? `Feed ${number} (${detail.title})` : `Feed ${number}`;
   const resultMessage =
     `Halo kak, hasil ${feedName} sudah selesai.\n` +
@@ -299,7 +302,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
 
   // Danta's view: exactly what the client changed, compared with the live brief.
   const changes = detail.revision ? diffBrief({ title: detail.title, slides: detail.slides }, detail.revision) : [];
-  const revisionPanel = role === 'gozi' && detail.revision ? (
+  const revisionPanel = isDanta && detail.revision ? (
     <section className={styles.section}>
       <h3 className={styles.sectionTitle}>Revisi dari client</h3>
       <div className={styles.group}>
@@ -367,7 +370,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
                 {l.label}
                 <span className={styles.fileMeta}> · {hostOf(l.url)}</span>
               </a>
-              {(role === 'gozi' || (role === 'client' && l.added_by === 'client')) && canUploadBrief && (
+              {(isDanta || (role === 'client' && l.added_by === 'client')) && canUploadBrief && (
                 <button
                   className={styles.iconBtn}
                   aria-label={`Hapus link ${l.label}`}
@@ -454,7 +457,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
 
           {/* ── Workflow actions ───────────────────────────────────── */}
           <div className={`${styles.actions} ${styles.actionBar}`}>
-            {role === 'gozi' && status === 'brief' && (clientEnabled ? (
+            {isDanta && status === 'brief' && (clientEnabled ? (
               <>
                 <button className={styles.btn} disabled={!!busy || dirty}
                   onClick={async () => { await doAction('send_brief_to_client'); setShareOpen(true); }}>
@@ -467,10 +470,10 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
               </>
             ) : (
               <button className={styles.btn} disabled={!!busy || dirty} onClick={() => doAction('send_to_designer')}>
-                Kirim ke designer
+                {role === 'designer' ? 'Mulai desain' : 'Kirim ke designer'}
               </button>
             ))}
-            {role === 'gozi' && status === 'brief_review' && (
+            {isDanta && status === 'brief_review' && (
               <>
                 <button className={styles.btn} disabled={!!busy || dirty || !!detail.revision}
                   title={detail.revision ? 'Tangani revisi client dulu' : ''}
@@ -500,7 +503,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
                 Kirim ke review (v{open})
               </button>
             )}
-            {role === 'gozi' && status === 'review' && (
+            {isDanta && status === 'review' && (
               <>
                 <button className={`${styles.btn} ${styles.btnGreen}`} disabled={!!busy} onClick={() => doAction('approve')}>
                   Setujui v{detail.version}
@@ -510,14 +513,14 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
                 </button>
               </>
             )}
-            {role === 'gozi' && (status === 'approved' || status === 'posted') && (
+            {isDanta && (status === 'approved' || status === 'posted') && (
               <button className={styles.btn} disabled={!!busy || resultLinks.length === 0}
                 title={resultLinks.length === 0 ? 'Tambahkan link hasil (Google Drive) dulu' : ''}
                 onClick={() => setResultShareOpen(true)}>
                 Kirim hasil ke client
               </button>
             )}
-            {status === 'approved' && role !== 'designer' && (
+            {status === 'approved' && (role !== 'designer' || isDanta) && (
               <button className={`${styles.btn} ${styles.btnTint}`} disabled={!!busy} onClick={() => doAction('mark_posted')}>
                 Tandai sudah diposting
               </button>
@@ -537,7 +540,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
             </div>
           )}
 
-          {showRevision && role === 'gozi' && status === 'review' && (
+          {showRevision && isDanta && status === 'review' && (
             <div className={styles.group}>
               <label className={styles.label} htmlFor="rev">Catatan revisi untuk designer</label>
               <textarea
@@ -679,7 +682,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
         </div>
       </aside>
 
-      {shareOpen && role === 'gozi' && (
+      {shareOpen && isDanta && (
         <SharePopup
           title="Bagikan ke client"
           hint="Client membuka link ini, memasukkan PIN, lalu langsung melihat brief feed ini. PIN tidak ikut di link."
@@ -689,7 +692,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, onClose, 
         />
       )}
 
-      {resultShareOpen && role === 'gozi' && (
+      {resultShareOpen && isDanta && (
         <SharePopup
           title="Kirim hasil ke client"
           hint="Salin pesan ini lalu tempel di WhatsApp ke client, atau tekan tombol WhatsApp. Isinya link hasil Google Drive."

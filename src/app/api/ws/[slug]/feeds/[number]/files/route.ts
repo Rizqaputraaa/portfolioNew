@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BUCKET, briefChanged, db, fail, requireSession, touch } from '@/lib/workspace/server';
+import { BUCKET, briefChanged, db, fail, isLead, requireSession, touch } from '@/lib/workspace/server';
 import { lastSentVersion } from '@/lib/workspace/feeds';
 import { MAX_SLIDES } from '@/lib/workspace/types';
 import type { Role } from '@/lib/workspace/types';
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   const role = session.role as Role;
 
   if (kind === 'design' && role !== 'designer') return fail('Hanya designer yang upload desain', 403);
-  if (kind === 'brief' && role === 'designer') return fail('Brief diunggah oleh Danta atau client', 403);
+  if (kind === 'brief' && role === 'designer' && !isLead(session)) return fail('Brief diunggah oleh Danta atau client', 403);
 
   const { data: feed } = await client
     .from('ws_feeds').select('id, status, created_by')

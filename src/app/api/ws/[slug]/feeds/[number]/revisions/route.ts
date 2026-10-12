@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { briefChanged, db, fail, requireSession, touch } from '@/lib/workspace/server';
+import { briefChanged, db, fail, hasRole, requireSession, touch } from '@/lib/workspace/server';
 import { MAX_SLIDES } from '@/lib/workspace/types';
 
 type Ctx = { params: { slug: string; number: string } };
@@ -15,7 +15,7 @@ function cleanSlides(input: unknown) {
 async function loadFeed(req: NextRequest, ctx: Ctx, roles: ('client' | 'gozi')[]) {
   const session = requireSession(req, ctx.params.slug);
   if (!session) return { error: fail('Belum login', 401) };
-  if (!roles.includes(session.role as 'client' | 'gozi')) return { error: fail('Tidak punya akses', 403) };
+  if (!roles.some(r => hasRole(session, r))) return { error: fail('Tidak punya akses', 403) };
   const client = db();
   if (!client) return { error: fail('Server belum siap', 500) };
   const { data: feed } = await client

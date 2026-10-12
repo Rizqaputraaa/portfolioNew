@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, fail, requireSession, touch } from '@/lib/workspace/server';
+import { db, fail, isLead, requireSession, touch } from '@/lib/workspace/server';
 import { listFeeds } from '@/lib/workspace/feeds';
 import { MAX_SLIDES } from '@/lib/workspace/types';
 
@@ -15,14 +15,14 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   if (!project) return fail('Workspace tidak ditemukan', 404);
 
   const feeds = await listFeeds(client, session.pid, session.role);
-  return NextResponse.json({ project, me: { role: session.role, name: session.name }, feeds });
+  return NextResponse.json({ project, me: { role: session.role, name: session.name, lead: isLead(session) }, feeds });
 }
 
 // New feed brief — Danta writes briefs; the client may also submit one (raw brief from their side).
 export async function POST(req: NextRequest, { params }: { params: { slug: string } }) {
   const session = requireSession(req, params.slug);
   if (!session) return fail('Belum login', 401);
-  if (session.role === 'designer') return fail('Brief dibuat oleh Danta atau client', 403);
+  if (session.role === 'designer' && !isLead(session)) return fail('Brief dibuat oleh Danta atau client', 403);
   const client = db();
   if (!client) return fail('Server belum siap', 500);
 
@@ -43,7 +43,8 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
   const { data: feed, error } = await client
     .from('ws_feeds')
-    .insert({ project_id: session.pid, number, title, created_by: session.role })
+    // a lead designer stands in for Danta, so the feed counts as Danta's draft (hidden from the client)
+    .insert({ project_id: session.pid, number, title, created_by: isLead(session) ? 'gozi' : session.role })
     .select('id, number').single();
   if (error || !feed) return fail(error?.message ?? 'Gagal membuat feed', 500);
 
@@ -62,7 +63,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
 
   await client.from('ws_comments').insert({
     feed_id: feed.id, role: 'system', kind: 'system', visibility: 'all',
-    body: session.role === 'client' ? 'Client membuat feed baru' : 'Brief dibuat oleh Danta',
+    body: session.role === 'client' ? 'Client membuat feed baru' : isLead(session) && session.role === 'designer' ? 'Brief dibuat' : 'Brief dibuat oleh Danta',
   });
 
   await touch(client, feed.id, session.role, session.role === 'client');
