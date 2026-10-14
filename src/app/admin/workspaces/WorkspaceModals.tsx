@@ -39,6 +39,7 @@ export function AddClient({ onClose, onCreate }: {
   const [price, setPrice] = useState('');
   const [danta, setDanta] = useState(true);
   const [clientLogin, setClientLogin] = useState(false);
+  const [promo, setPromo] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -47,7 +48,7 @@ export function AddClient({ onClose, onCreate }: {
     setBusy(true);
     setError('');
     try {
-      await onCreate({ clientName, instagram, feeds: Number(feeds), packNumber: Number(packNumber), monthLabel, price, clientLogin, danta });
+      await onCreate({ clientName, instagram, feeds: Number(feeds), packNumber: Number(packNumber), monthLabel, price, clientLogin, danta, promo });
     } catch (err) {
       setError((err as Error).message);
       setBusy(false);
@@ -108,6 +109,10 @@ export function AddClient({ onClose, onCreate }: {
         <label className={styles.toggle}>
           <input type="checkbox" checked={clientLogin} onChange={e => setClientLogin(e.target.checked)} />
           <div><strong>Client ikut login ke workspace</strong><span>Biarkan mati kalau hasil dikirim lewat WhatsApp oleh Danta.</span></div>
+        </label>
+        <label className={styles.toggle}>
+          <input type="checkbox" checked={promo} onChange={e => setPromo(e.target.checked)} />
+          <div><strong>Brief memakai Daftar Raket (padel)</strong><span>Brief tiap feed memakai daftar raket dan harga, bukan file brief.</span></div>
         </label>
 
         {error && <div className={styles.error} role="alert">{error}</div>}

@@ -13,6 +13,7 @@ export interface EditableClient {
   month_label: string | null;
   price: number | null;
   avatar_url: string | null;
+  promo_enabled?: boolean;
 }
 
 /** Centre-crops a picked image to a small square (WebP), so a 6 MB camera photo becomes ~20 KB. */
@@ -42,6 +43,7 @@ export default function EditClient({ client, onClose, onSave }: {
   const [monthLabel, setMonthLabel] = useState(client.month_label ?? '');
   const [price, setPrice] = useState(client.price == null ? '' : String(client.price));
   // undefined = keep the current photo, null = remove it, string = the newly picked one
+  const [promo, setPromo] = useState(!!client.promo_enabled);
   const [avatar, setAvatar] = useState<string | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -64,7 +66,7 @@ export default function EditClient({ client, onClose, onSave }: {
     setError('');
     try {
       await onSave(client.slug, {
-        clientName, instagram, feeds: Number(feeds), packNumber: Number(packNumber), monthLabel, price,
+        clientName, instagram, feeds: Number(feeds), packNumber: Number(packNumber), monthLabel, price, promo,
         ...(avatar !== undefined && { avatar }),
       });
     } catch (err) {
@@ -134,6 +136,11 @@ export default function EditClient({ client, onClose, onSave }: {
             <input id="e-price" className={styles.input} type="number" inputMode="numeric" min={0} value={price} onChange={e => setPrice(e.target.value)} />
           </div>
         </div>
+
+        <label className={styles.toggle}>
+          <input type="checkbox" checked={promo} onChange={e => setPromo(e.target.checked)} />
+          <div><strong>Brief memakai Daftar Raket (padel)</strong><span>Feed baru memakai daftar raket dan harga. Feed yang sudah punya file brief tetap memakai file itu.</span></div>
+        </label>
 
         <span className={styles.help}>Alamat workspace (/w/{client.slug}) tidak berubah, jadi link yang sudah dibagikan tetap jalan.</span>
 

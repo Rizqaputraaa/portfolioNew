@@ -223,3 +223,47 @@ create index if not exists ws_promo_items_batch_idx on public.ws_promo_items (ba
 alter table public.ws_promo_batches enable row level security;
 alter table public.ws_promo_items   enable row level security;
 notify pgrst, 'reload schema';
+
+-- v11: only the racket name is required in a promo list; harga promo is optional too.
+alter table public.ws_promo_items alter column price_promo drop not null;
+notify pgrst, 'reload schema';
+
+-- v12: racket list lives inside each feed's brief (replaces the public form and its batches).
+--   promo_enabled: this project's briefs use "Daftar promo" instead of "File brief".
+alter table public.ws_projects add column if not exists promo_enabled boolean not null default false;
+update public.ws_projects set promo_enabled = true where slug in ('padel', 'garagepadelstore');
+
+create table if not exists public.ws_feed_items (
+  id              uuid primary key default gen_random_uuid(),
+  feed_id         uuid not null references public.ws_feeds(id) on delete cascade,
+  position        integer not null,
+  name            text not null,
+  price_original  numeric,
+  price_promo     numeric,
+  image_url       text
+);
+create index if not exists ws_feed_items_feed_idx on public.ws_feed_items (feed_id, position);
+alter table public.ws_feed_items enable row level security;
+
+alter table public.ws_brief_revisions add column if not exists items jsonb;  -- client's proposed racket list (null = unchanged)
+
+drop table if exists public.ws_promo_items;
+drop table if exists public.ws_promo_batches;
+alter table public.ws_projects drop column if exists form_token;
+notify pgrst, 'reload schema';
+
+-- v13: Aset Raket library: the largest product photo found for each racket (original file, to cut out by hand).
+create table if not exists public.ws_racket_assets (
+  id          uuid primary key default gen_random_uuid(),
+  name_key    text not null unique,            -- racket name, lower case, single spaces
+  name        text not null,
+  source_url  text,                            -- product link it was taken from
+  image_path  text not null,                   -- in the private "workspace" bucket, under rackets/
+  width       integer,
+  height      integer,
+  size_bytes  integer,
+  mime_type   text,
+  created_at  timestamptz not null default now()
+);
+alter table public.ws_racket_assets enable row level security;
+notify pgrst, 'reload schema';

@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
 
   const [{ data: projects }, { data: feeds }, { data: todos }, { count: openTodos }] = await Promise.all([
     client.from('ws_projects')
-      .select('id, slug, name, client_name, instagram, pack_number, target_feeds, month_label, price, avatar_path, danta_enabled, client_enabled, created_at')
+      .select('id, slug, name, client_name, instagram, pack_number, target_feeds, month_label, price, avatar_path, danta_enabled, client_enabled, promo_enabled, created_at')
       .order('created_at', { ascending: true }),
     client.from('ws_feeds').select('project_id, status'),
     client.from('todos').select('id, text, priority').eq('done', false).order('created_at', { ascending: false }).limit(3),

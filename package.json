@@ -17,14 +17,17 @@
     "@react-three/rapier": "^1.5.0",
     "@studio-freight/lenis": "^1.0.42",
     "@supabase/supabase-js": "^2.106.0",
+    "image-size": "^2.0.4",
     "mammoth": "^1.13.0",
     "meshline": "^3.3.1",
     "next": "14.2.35",
     "postprocessing": "^6.39.1",
     "react": "^18",
     "react-dom": "^18",
+    "read-excel-file": "^9.3.12",
     "resend": "^6.12.3",
-    "three": "^0.184.0"
+    "three": "^0.184.0",
+    "unpdf": "^1.8.1"
   },
   "devDependencies": {
     "@types/node": "^20",

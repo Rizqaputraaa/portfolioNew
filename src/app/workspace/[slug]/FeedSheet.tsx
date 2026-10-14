@@ -4,8 +4,9 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { api, copyText, fileUrl, fmtDate, fmtSize, isImage, uploadFeedFile } from './api';
 import {
   STATUS_LABEL,
-  type BriefRevision, type FeedDetail, type FeedFile, type Role, type Slide,
+  type BriefRevision, type FeedDetail, type FeedFile, type FeedItem, type Role, type Slide,
 } from '@/lib/workspace/types';
+import { fmtRupiah, parseRupiah } from '@/lib/workspace/promo';
 import SmartImage from './SmartImage';
 import styles from './workspace.module.css';
 
@@ -15,6 +16,7 @@ interface Props {
   role: Role;
   lead?: boolean; // designer in a project without Danta
   clientEnabled: boolean;
+  promoEnabled?: boolean; // the brief is a racket list instead of brief files
   onClose: () => void;
   onChanged: () => void;
   onSeen?: () => void;
@@ -33,12 +35,41 @@ interface PendingUpload {
 }
 const emptySlide = (position: number): Slide => ({ position, headline: '', body: '' });
 
-export default function FeedSheet({ slug, number, role, lead, clientEnabled, onClose, onChanged, onSeen }: Props) {
-  // Danta, or the designer standing in for Danta when the project has none.
-  const isDanta = role === 'gozi' || (role === 'designer' && !!lead);
+/** A racket in the promo list while it is being edited: prices stay as typed ("3.949"). */
+interface ItemRow {
+  id: string; name: string; original: string; promo: string; image: string;
+  asset?: FeedItem['asset'];
+  itemId?: string; savedName?: string; savedImage?: string; // as stored on the server, to tell whether the row was edited
+}
+const newItemRow = (p: Partial<ItemRow> = {}): ItemRow => ({
+  id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`, name: '', original: '', promo: '', image: '', ...p,
+});
+const priceText = (n: number | null) => (n === null ? '' : n % 1000 === 0 ? (n / 1000).toLocaleString('id-ID') : String(n));
+const toRows = (items: FeedItem[]): ItemRow[] => {
+  const rows = items.map(i => newItemRow({ name: i.name, original: priceText(i.price_original), promo: priceText(i.price_promo), image: i.image_url ?? '', asset: i.asset, itemId: i.id, savedName: i.name, savedImage: i.image_url ?? '' }));
+  return rows.length ? rows : [newItemRow()];
+};
+const isFilled = (r: ItemRow) => !!(r.name.trim() || r.original.trim() || r.promo.trim() || r.image.trim());
+const rowsToItems = (rows: ItemRow[]) => rows.filter(isFilled).map(r => ({
+  name: r.name.trim(),
+  price_original: r.original.trim() ? parseRupiah(r.original) : null,
+  price_promo: r.promo.trim() ? parseRupiah(r.promo) : null,
+  image_url: r.image.trim() || null,
+}));
+
+export default function FeedSheet({ slug, number, role, clientEnabled, promoEnabled, onClose, onChanged, onSeen }: Props) {
+  // The designer holds everything Danta can do, in every project.
+  const isDanta = role === 'gozi' || role === 'designer';
   const [detail, setDetail] = useState<FeedDetail | null>(null);
   const [title, setTitle] = useState('');
   const [slides, setSlides] = useState<Slide[]>([]);
+  const [itemRows, setItemRows] = useState<ItemRow[]>([newItemRow()]);
+  const [readingList, setReadingList] = useState(false);
+  const [fetching, setFetching] = useState<{ done: number; total: number } | null>(null);
+  const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
+  const [ranks, setRanks] = useState<Record<string, number>>({});
+  const [listNote, setListNote] = useState('');
+  const listInput = useRef<HTMLInputElement>(null);
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState('');
   const [error, setError] = useState('');
@@ -66,7 +97,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
     window.setTimeout(onClose, 230);
   }, [closing, onClose]);
 
-  const load = useCallback(async (keepDraft = false) => {
+  const load = useCallback(async (keepDraft = false): Promise<FeedDetail | undefined> => {
     try {
       const d = await api<FeedDetail>(slug, `/feeds/${number}`);
       setDetail(d);
@@ -74,10 +105,14 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
         const src = role === 'client' && d.revision ? d.revision : d;
         setTitle(src.title);
         setSlides(src.slides.length ? src.slides : [emptySlide(1)]);
+        setItemRows(toRows(role === 'client' && d.revision?.items ? d.revision.items : d.items));
+        setListNote('');
         setDirty(false);
       }
+      return d;
     } catch (e) {
       setError((e as Error).message);
+      return undefined;
     }
   }, [slug, number, role]);
 
@@ -181,14 +216,126 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
     setDirty(true);
   };
 
-  const saveBrief = () => run('save', async () => {
-    if (clientRevising) {
-      await api(slug, `/feeds/${number}/revisions`, { method: 'POST', json: { title, slides, note: revNote } });
-      setRevNote('');
-    } else {
-      await api(slug, `/feeds/${number}`, { method: 'PATCH', json: { title, slides } });
+  // Brief files stay for feeds that already have them; every other feed of a promo project uses the racket list.
+  const showPromo = !!promoEnabled && (detail.items.length > 0 || briefFiles.length === 0);
+  const showFiles = !promoEnabled || briefFiles.length > 0 || pending.some(p => p.kind === 'brief');
+  const filledRows = itemRows.filter(isFilled);
+  const itemProblem = showPromo
+    ? filledRows.find(r => !r.name.trim()
+      || (r.original.trim() && parseRupiah(r.original) === null)
+      || (r.promo.trim() && parseRupiah(r.promo) === null))
+    : undefined;
+
+  const updateItem = (id: string, patch: Partial<ItemRow>) => {
+    setItemRows(rs => rs.map(r => (r.id === id ? { ...r, ...patch } : r)));
+    setDirty(true);
+  };
+  const removeItem = (id: string) => {
+    setItemRows(rs => (rs.length > 1 ? rs.filter(r => r.id !== id) : [newItemRow()]));
+    setDirty(true);
+  };
+  const addItems = (n: number) => {
+    setItemRows(rs => [...rs, ...Array.from({ length: n }, () => newItemRow())]);
+    setDirty(true);
+  };
+
+  // One file (Excel, Word, PDF, CSV, TXT) fills the list; nothing is saved until the brief is saved.
+  const readList = async (file: File) => {
+    setReadingList(true);
+    setError('');
+    setListNote('');
+    try {
+      const body = new FormData();
+      body.append('file', file);
+      const res = await fetch(`/api/ws/${slug}/promo-parse`, { method: 'POST', body });
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(json.error ?? 'File tidak bisa dibaca');
+      const parsed = (json.rows as { name: string; original: string; promo: string; image: string }[]).map(r => newItemRow(r));
+      setItemRows(rs => [...rs.filter(isFilled), ...parsed]);
+      setDirty(true);
+      setListNote(`${parsed.length} raket terbaca dari ${file.name}. Periksa dulu, perbaiki kalau ada yang salah, lalu simpan brief.`);
+    } catch (e) {
+      setError((e as Error).message);
     }
-  });
+    setReadingList(false);
+  };
+
+  const nameOf = (s: string) => s.trim().toLowerCase().replace(/\s+/g, ' ');
+
+  // Keeps the editor's drafts but refreshes which rackets have a library photo.
+  const syncAssets = (items: FeedItem[]) =>
+    setItemRows(rs => rs.map(row => {
+      const fresh = items.find(i => i.id && i.id === row.itemId);
+      return fresh ? { ...row, asset: fresh.asset } : row;
+    }));
+
+  // After a save: take the photo of every racket that has none, and re-take it where its link was changed.
+  const autoFetch = async (prev: FeedItem[]) => {
+    let fresh: FeedDetail;
+    try { fresh = await api<FeedDetail>(slug, `/feeds/${number}`); } catch { return; }
+    const prevLink = new Map(prev.map(i => [nameOf(i.name), i.image_url]));
+    const todo = fresh.items.filter(i => i.id && i.image_url
+      && (!i.asset || (prevLink.has(nameOf(i.name)) && prevLink.get(nameOf(i.name)) !== i.image_url)));
+    if (!todo.length) return;
+    setFetching({ done: 0, total: todo.length });
+    for (let i = 0; i < todo.length; i++) {
+      try {
+        await api(slug, '/rackets', { method: 'POST', json: { itemId: todo[i].id, force: !!todo[i].asset } });
+      } catch (e) {
+        setError(`${todo[i].name}: ${(e as Error).message}`);
+      }
+      setFetching({ done: i + 1, total: todo.length });
+    }
+    setFetching(null);
+    const d = await load(true);
+    if (d) syncAssets(d.items);
+    onChanged();
+  };
+
+  const racketAction = async (r: ItemRow, mode: 'get' | 'another') => {
+    if (!r.itemId) return;
+    const key = r.itemId;
+    setRowBusy(b => ({ ...b, [key]: true }));
+    setError('');
+    try {
+      const rank = mode === 'another' ? (ranks[key] ?? 0) + 1 : 0;
+      if (mode === 'another') setRanks(x => ({ ...x, [key]: rank }));
+      await api(slug, '/rackets', { method: 'POST', json: { itemId: key, force: mode === 'another', rank } });
+      const d = await load(true);
+      if (d) syncAssets(d.items);
+    } catch (e) {
+      setError((e as Error).message);
+    }
+    setRowBusy(b => { const n = { ...b }; delete n[key]; return n; });
+  };
+
+  const dropAsset = async (r: ItemRow) => {
+    if (!r.asset || !window.confirm(`Hapus gambar "${r.name}" dari library? Raket ini tetap ada di brief.`)) return;
+    const gone = r.asset.id;
+    try {
+      await api(slug, `/rackets/${gone}`, { method: 'DELETE' });
+      setItemRows(rs => rs.map(row => (row.asset?.id === gone ? { ...row, asset: null } : row)));
+      onChanged();
+    } catch (e) {
+      setError((e as Error).message);
+    }
+  };
+
+  const saveBrief = async () => {
+    const prev = detail.items;
+    let saved = false;
+    await run('save', async () => {
+      const items = showPromo ? { items: rowsToItems(itemRows) } : {};
+      if (clientRevising) {
+        await api(slug, `/feeds/${number}/revisions`, { method: 'POST', json: { title, slides, ...items, note: revNote } });
+        setRevNote('');
+      } else {
+        await api(slug, `/feeds/${number}`, { method: 'PATCH', json: { title, slides, ...items } });
+      }
+      saved = true;
+    });
+    if (saved && showPromo && !clientRevising) void autoFetch(prev);
+  };
 
   const resolveRevision = (action: 'apply' | 'dismiss') =>
     run('revision', () => api(slug, `/feeds/${number}/revisions`, { method: 'PATCH', json: { action } }));
@@ -254,6 +401,150 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
           </div>
         </div>
 
+        {showPromo && (
+          <div className={styles.group}>
+            <div className={styles.slideHead}>
+              <span className={styles.slideNum}>Daftar Raket</span>
+              <span className={`${styles.muted} ${styles.small}`}>
+                {fetching ? `Mengambil gambar ${fetching.done}/${fetching.total}…` : `${filledRows.length} raket`}
+              </span>
+            </div>
+            {!canEditBrief && filledRows.length > 0 && (
+              <button className={`${styles.btn} ${styles.btnTint} ${styles.btnSm}`} style={{ alignSelf: 'flex-start' }}
+                onClick={() => copyLink('list-all', filledRows.map((r, i) => {
+                  const pr = parseRupiah(r.promo);
+                  return `${i + 1}. ${r.name}${pr ? ` - ${fmtRupiah(pr)}` : ''}`;
+                }).join('\n'))}>
+                {copiedId === 'list-all' ? 'Tersalin ✓' : 'Salin daftar'}
+              </button>
+            )}
+            {canEditBrief && (
+              <>
+                <span className={`${styles.muted} ${styles.small}`}>
+                  Hanya nama raket yang wajib. Harga awal, harga promo, dan link gambar boleh dikosongkan. Harga cukup diketik
+                  seperti <b>3.949</b> untuk Rp3.949.000.
+                </span>
+                <input ref={listInput} type="file" hidden accept=".xlsx,.docx,.pdf,.csv,.txt"
+                  onChange={e => { const f = e.target.files?.[0]; e.target.value = ''; if (f) readList(f); }} />
+                <button className={`${styles.btn} ${styles.btnTint} ${styles.btnSm}`} style={{ alignSelf: 'flex-start' }}
+                  disabled={readingList} onClick={() => listInput.current?.click()}>
+                  {readingList ? 'Membaca file…' : '+ Upload file daftar'}
+                </button>
+                {listNote && <span className={styles.promoNote} role="status">{listNote}</span>}
+              </>
+            )}
+            {itemRows.map((r, i) => {
+              const original = parseRupiah(r.original);
+              const promo = parseRupiah(r.promo);
+              // Read-only (e.g. the designer): plain text and a real, clickable link instead of greyed-out fields.
+              if (!canEditBrief) {
+                const link = r.image.trim();
+                const a = r.asset;
+                const assetHref = a ? `/api/ws/${slug}/rackets/${a.id}` : '';
+                return (
+                  <div key={r.id} className={styles.promoItem}>
+                    <div className={styles.promoHead}>
+                      <span className={styles.promoNum}>{i + 1}</span>
+                      {a && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img className={styles.promoThumb} src={assetHref} alt="" loading="lazy" />
+                      )}
+                      <span className={styles.promoReadName}>{r.name}</span>
+                    </div>
+                    <div className={styles.promoReadMeta}>
+                      {original ? <s>{fmtRupiah(original)}</s> : null}
+                      {promo ? <b>{fmtRupiah(promo)}</b> : <span className={styles.muted}>tanpa harga</span>}
+                      {a ? (
+                        <>
+                          <a className={styles.fileLink} href={assetHref} target="_blank" rel="noopener noreferrer">Buka gambar ↗</a>
+                          <a className={styles.fileLink} href={`${assetHref}?download=1`}>Unduh</a>
+                          {a.width && a.height ? <span className={styles.muted}>{a.width}×{a.height}</span> : null}
+                        </>
+                      ) : link ? (
+                        <>
+                          <a className={styles.fileLink} href={link} target="_blank" rel="noopener noreferrer">Halaman produk ↗</a>
+                          <button className={styles.linkBtn} onClick={() => copyLink(`item-${r.id}`, link)}>
+                            {copiedId === `item-${r.id}` ? 'Tersalin ✓' : 'Salin link'}
+                          </button>
+                          <span className={styles.muted}>gambar belum diambil</span>
+                        </>
+                      ) : <span className={styles.muted}>tanpa link</span>}
+                    </div>
+                  </div>
+                );
+              }
+              return (
+                <div key={r.id} className={styles.promoItem}>
+                  <div className={styles.promoHead}>
+                    <span className={styles.promoNum}>{i + 1}</span>
+                    <input className={styles.input} value={r.name} disabled={!canEditBrief} placeholder="Nama raket"
+                      aria-label={`Nama raket ${i + 1}`} maxLength={140} onChange={e => updateItem(r.id, { name: e.target.value })} />
+                    {canEditBrief && (
+                      <button className={styles.iconBtn} aria-label={`Hapus raket ${i + 1}`} onClick={() => removeItem(r.id)}>
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                          <path d="M18 6L6 18M6 6l12 12" />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+                  <div className={styles.promoPrices}>
+                    <div className={styles.field}>
+                      <input className={styles.input} inputMode="numeric" value={r.original} disabled={!canEditBrief}
+                        placeholder="Harga awal" aria-label={`Harga awal ${i + 1}`} onChange={e => updateItem(r.id, { original: e.target.value })} />
+                      <span className={styles.promoHint}>{original ? fmtRupiah(original) : ' '}</span>
+                    </div>
+                    <div className={styles.field}>
+                      <input className={styles.input} inputMode="numeric" value={r.promo} disabled={!canEditBrief}
+                        placeholder="Harga promo" aria-label={`Harga promo ${i + 1}`} onChange={e => updateItem(r.id, { promo: e.target.value })} />
+                      <span className={`${styles.promoHint} ${styles.promoHintOn}`}>{promo ? fmtRupiah(promo) : ' '}</span>
+                    </div>
+                  </div>
+                  <input className={styles.input} inputMode="url" autoCapitalize="none" autoCorrect="off" value={r.image}
+                    disabled={!canEditBrief} placeholder="Link gambar produk" aria-label={`Link gambar ${i + 1}`}
+                    onChange={e => updateItem(r.id, { image: e.target.value })} />
+                  {canEditBrief && r.itemId && r.name === r.savedName && r.image === r.savedImage && (r.asset || r.image.trim()) && (
+                    <div className={styles.promoAsset}>
+                      {r.asset ? (
+                        <>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img className={styles.promoThumb} src={`/api/ws/${slug}/rackets/${r.asset.id}`} alt="" loading="lazy" />
+                          <span className={`${styles.muted} ${styles.small}`}>
+                            {r.asset.width}×{r.asset.height}
+                            {Math.min(r.asset.width ?? 0, r.asset.height ?? 0) < 1000 ? ' · kecil' : ''}
+                          </span>
+                          <a className={styles.fileLink} href={`/api/ws/${slug}/rackets/${r.asset.id}?download=1`}>Unduh</a>
+                          <button className={styles.linkBtn} disabled={rowBusy[r.itemId]} onClick={() => racketAction(r, 'another')}>
+                            {rowBusy[r.itemId] ? 'Mengambil…' : 'Gambar lain'}
+                          </button>
+                          <button className={styles.linkBtn} onClick={() => dropAsset(r)}>Hapus</button>
+                        </>
+                      ) : (
+                        <>
+                          <span className={`${styles.muted} ${styles.small}`}>Gambar belum diambil</span>
+                          <button className={styles.linkBtn} disabled={rowBusy[r.itemId]} onClick={() => racketAction(r, 'get')}>
+                            {rowBusy[r.itemId] ? 'Mengambil…' : 'Ambil gambar'}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            {canEditBrief && (
+              <div className={styles.actions}>
+                <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => addItems(1)}>+ Raket</button>
+                <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => addItems(5)}>+ 5 baris</button>
+              </div>
+            )}
+            {canEditBrief && itemProblem && (
+              <span className={styles.promoWarn}>
+                {itemProblem.name.trim() ? `${itemProblem.name.trim()}: harga tidak valid` : 'Ada baris yang namanya belum diisi'}
+              </span>
+            )}
+          </div>
+        )}
+
         {slides.map((s, i) => (
           <div key={i} className={styles.group}>
             <div className={styles.slideHead}>
@@ -288,7 +579,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
             >
               + Slide
             </button>
-            <button className={styles.btn} disabled={!dirty || !!busy || !title.trim()} onClick={saveBrief}>
+            <button className={styles.btn} disabled={!dirty || !!busy || !title.trim() || !!itemProblem} onClick={saveBrief}>
               {busy === 'save' ? 'Mengirim…'
                 : clientRevising ? (detail.revision ? 'Perbarui revisi' : 'Kirim revisi ke Danta')
                 : 'Simpan brief'}
@@ -301,7 +592,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
   );
 
   // Danta's view: exactly what the client changed, compared with the live brief.
-  const changes = detail.revision ? diffBrief({ title: detail.title, slides: detail.slides }, detail.revision) : [];
+  const changes = detail.revision ? diffBrief({ title: detail.title, slides: detail.slides, items: detail.items }, detail.revision) : [];
   const revisionPanel = isDanta && detail.revision ? (
     <section className={styles.section}>
       <h3 className={styles.sectionTitle}>Revisi dari client</h3>
@@ -412,6 +703,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
       </section>
 
       {/* ── Brief files ────────────────────────────────────────── */}
+      {showFiles && (
       <section className={styles.section}>
         <h3 className={styles.sectionTitle}>File brief</h3>
         <div className={styles.group}>
@@ -438,6 +730,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
           )}
         </div>
       </section>
+      )}
 
     </>
   );
@@ -465,7 +758,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
                 </button>
                 <button className={`${styles.btn} ${styles.btnGhost}`} disabled={!!busy || dirty}
                   onClick={() => doAction('send_to_designer')}>
-                  Langsung ke designer
+                  {role === 'designer' ? 'Langsung mulai desain' : 'Langsung ke designer'}
                 </button>
               </>
             ) : (
@@ -478,7 +771,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, onC
                 <button className={styles.btn} disabled={!!busy || dirty || !!detail.revision}
                   title={detail.revision ? 'Tangani revisi client dulu' : ''}
                   onClick={() => doAction('send_to_designer')}>
-                  Kirim ke designer
+                  {role === 'designer' ? 'Mulai desain' : 'Kirim ke designer'}
                 </button>
                 <button className={`${styles.btn} ${styles.btnTint}`} onClick={() => setShareOpen(o => !o)}>
                   Bagikan link
@@ -913,9 +1206,12 @@ const FIELD_LABEL: Record<'headline' | 'body', string> = {
 };
 
 /** Field-by-field comparison of the live brief and the client's proposal. */
+const itemLine = (i: FeedItem) =>
+  `${i.name}${i.price_promo ? ` — ${fmtRupiah(i.price_promo)}` : ''}${i.price_original ? ` (awal ${fmtRupiah(i.price_original)})` : ''}${i.image_url ? ' · ada link' : ''}`;
+
 function diffBrief(
-  live: { title: string; slides: Slide[] },
-  proposed: Pick<BriefRevision, 'title' | 'slides'>,
+  live: { title: string; slides: Slide[]; items: FeedItem[] },
+  proposed: Pick<BriefRevision, 'title' | 'slides' | 'items'>,
 ): Change[] {
   const out: Change[] = [];
   if (live.title.trim() !== proposed.title.trim()) {
@@ -935,6 +1231,13 @@ function diffBrief(
       if (before !== after) {
         out.push({ label: `Slide ${i + 1} · ${FIELD_LABEL[f]}${a ? '' : ' (slide baru)'}`, before, after });
       }
+    }
+  }
+  if (proposed.items) {
+    const before = live.items.map(itemLine);
+    const after = proposed.items.map(itemLine);
+    if (before.join('\n') !== after.join('\n')) {
+      out.push({ label: `Daftar raket (${before.length} → ${after.length} raket)`, before: before.join('\n'), after: after.join('\n') });
     }
   }
   return out;

@@ -1,4 +1,4 @@
-import { randomBytes, randomInt } from 'crypto';
+import { randomInt } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin } from '@/lib/workspace/admin';
 import { hashPin } from '@/lib/workspace/server';
@@ -48,8 +48,8 @@ export async function POST(req: NextRequest) {
     pack_number: packNumber,
     price,
     danta_enabled: danta,
-    form_token: randomBytes(7).toString('hex'), // secret link for the client's promo list form
     client_enabled: clientLogin,
+    promo_enabled: body.promo === true,
   }).select('id').single();
   if (error || !project) return fail(error?.message ?? 'Gagal membuat project', 500);
 

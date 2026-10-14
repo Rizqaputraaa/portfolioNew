@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { briefChanged, db, fail, hasRole, requireSession, touch } from '@/lib/workspace/server';
 import { MAX_SLIDES } from '@/lib/workspace/types';
+import { cleanItems } from '@/lib/workspace/promo';
 
 type Ctx = { params: { slug: string; number: string } };
 
@@ -36,16 +37,22 @@ export async function POST(req: NextRequest, ctx: Ctx) {
   const slides = cleanSlides(body.slides);
   const note = String(body.note ?? '').trim() || null;
   if (!title) return fail('Judul tidak boleh kosong');
+  let items: unknown = null; // null = the client left the racket list alone
+  if (Array.isArray(body.items)) {
+    const cleaned = cleanItems(body.items);
+    if ('error' in cleaned) return fail(cleaned.error);
+    items = cleaned.items;
+  }
 
   const { data: pending } = await r.client
     .from('ws_brief_revisions').select('id').eq('feed_id', r.feed.id).eq('status', 'pending').maybeSingle();
 
   if (pending) {
     const { error } = await r.client.from('ws_brief_revisions')
-      .update({ title, slides, note, created_at: new Date().toISOString() }).eq('id', pending.id);
+      .update({ title, slides, items, note, created_at: new Date().toISOString() }).eq('id', pending.id);
     if (error) return fail(error.message, 500);
   } else {
-    const { error } = await r.client.from('ws_brief_revisions').insert({ feed_id: r.feed.id, title, slides, note });
+    const { error } = await r.client.from('ws_brief_revisions').insert({ feed_id: r.feed.id, title, slides, items, note });
     if (error) return fail(error.message, 500);
   }
 
@@ -77,6 +84,17 @@ export async function PATCH(req: NextRequest, ctx: Ctx) {
     if (slides.length) {
       const { error } = await r.client.from('ws_slides').insert(slides.map(s => ({ feed_id: r.feed.id, ...s })));
       if (error) return fail(error.message, 500);
+    }
+    if (Array.isArray(rev.items)) {
+      const cleaned = cleanItems(rev.items);
+      if ('items' in cleaned) {
+        await r.client.from('ws_feed_items').delete().eq('feed_id', r.feed.id);
+        if (cleaned.items.length) {
+          const { error } = await r.client.from('ws_feed_items')
+            .insert(cleaned.items.map((it, i) => ({ feed_id: r.feed.id, position: i + 1, ...it })));
+          if (error) return fail(error.message, 500);
+        }
+      }
     }
   }
 

@@ -199,6 +199,7 @@ export default function WorkspacePage() {
           role={me.role}
           lead={!!me.lead}
           clientEnabled={project.client_enabled !== false}
+          promoEnabled={!!project.promo_enabled}
           onClose={() => setOpen(null)}
           onChanged={load}
           onSeen={load}

@@ -2,7 +2,7 @@
 
 Private client workspace for Instagram feed packs, plus the owner dashboard that is the home of `/admin`. Next.js 14 (App Router) · Supabase (Postgres + private Storage) · Vercel (auto-deploy on push to `main`).
 
-Schema source of truth: [`workspace.sql`](./workspace.sql) (idempotent, versions v1–v10).
+Schema source of truth: [`workspace.sql`](./workspace.sql) (idempotent, versions v1–v13).
 
 ## Surfaces
 
@@ -10,8 +10,7 @@ Schema source of truth: [`workspace.sql`](./workspace.sql) (idempotent, versions
 |---|---|---|
 | Client workspace | `/w/<slug>` and `/w/<slug>/<n>` (redirect to `/workspace/<slug>`) | PIN only |
 | Owner dashboard | `/admin/workspaces` | Supabase login (`ADMIN_EMAILS`, default `admin@rizqaputra.com`) |
-| Promo list form | `/f/<form_token>` | secret link, no login |
-| Aset Raket tool | `/admin/workspaces/tools/raket?slug=<slug>` | admin |
+| Aset Raket tool | `/admin/workspaces/tools/raket` | admin |
 
 The old portfolio admin (Projects / Sources / Kategori / Todos) lives inside the same shell.
 
@@ -21,7 +20,7 @@ Roles: `designer` (owner), `gozi` (shown as **Danta**, the intermediary who writ
 
 Per project (`ws_projects`):
 - `client_enabled`: false means the client never logs in; Danta sends results by WhatsApp with a Drive link.
-- `danta_enabled`: false means the designer session gets `lead: true` and also holds Danta's powers. Use `isLead(session)` / `hasRole(session, role)` from `src/lib/workspace/server.ts`, never compare to `'gozi'` directly.
+- `danta_enabled`: only decides whether a Danta PIN exists. **The designer holds all of Danta's powers in every project** (`isLead(session)` is true for `designer` and `gozi`; use `isLead` / `hasRole(session, role)` from `src/lib/workspace/server.ts`, never compare to `'gozi'` directly).
 
 ## Feed flow
 
@@ -42,18 +41,22 @@ Transitions are defined in `TRANSITIONS` (`src/lib/workspace/server.ts`): send_b
 
 ## Data model (summary)
 
-`ws_projects`, `ws_members`, `ws_feeds`, `ws_slides`, `ws_files`, `ws_links` (kind `reference|result`), `ws_comments`, `ws_brief_revisions`, `ws_reads`, `ws_promo_batches`, `ws_promo_items`. RLS is enabled with no policies: only the server (service role key) reads or writes. Files live in the private bucket `workspace`, served through short-lived signed URLs after a role check.
+`ws_projects`, `ws_members`, `ws_feeds`, `ws_slides`, `ws_files`, `ws_links` (kind `reference|result`), `ws_comments`, `ws_brief_revisions` (slides and racket list proposals), `ws_reads`, `ws_feed_items` (racket list of a feed), `ws_racket_assets` (library of racket photos). RLS is enabled with no policies: only the server (service role key) reads or writes. Files live in the private bucket `workspace`, served through short-lived signed URLs after a role check.
 
 ## Code map
 
 - `src/lib/workspace/`: `server.ts` (session, PIN, lockout, transitions), `feeds.ts` (role-filtered `listFeeds` / `getFeedDetail`), `types.ts`, `admin.ts` (`requireAdmin`), `promo.ts` (rupiah parsing and formatting).
 - `src/app/api/ws/[slug]/…`: login, pin, feeds, feeds/[n] (+ action, files, links, revisions), files/[id] (+ preview).
-- `src/app/api/admin/ws/…`: overview, projects, projects/[slug], open, promo. `src/app/api/form/[token]`: public promo form.
-- `src/app/workspace/[slug]/`: board and feed sheet. `src/app/admin/workspaces/`: dashboard, rail, modals, tools. `src/app/f/[token]/`: client form.
+- `src/app/api/admin/ws/…`: overview, projects, projects/[slug], open, promo. 
+- `src/app/workspace/[slug]/`: board and feed sheet. `src/app/admin/workspaces/`: dashboard, rail, modals, tools.
 
-## Promo form and Aset Raket
+## Promo list (padel) and Aset Raket
 
-Clients send padel racket promo lists through the form. Prices are typed like people say them: `3.949` becomes Rp3.949.000 (values under 100.000 are read as thousands). The server revalidates, rejects non-http(s) links and allows 20 batches per hour per project. The owner tool sorts by highest price and splits 5 rackets per feed.
+Projects with `ws_projects.promo_enabled = true` (padel clients; switch in Add/Edit client) use a **Daftar promo** inside each feed brief instead of "File brief". Feeds that already have brief files keep them. Each row is a racket: name (required), harga awal, harga promo, image link (all optional). Prices are typed like people say them: `3.949` becomes Rp3.949.000 (values under 100.000 are read as thousands).
+
+The list is saved with "Simpan brief" (`PATCH /api/ws/<slug>/feeds/<n>` with `items`); a client's changes to a Danta brief arrive as a proposal (`ws_brief_revisions.items`) like slides. **Upload file daftar** (`POST /api/ws/<slug>/promo-parse`) reads xlsx, docx, pdf (text only), csv or txt with plain rules (`src/lib/workspace/promo-parse.ts`, no AI) and fills the rows for the person to check; nothing is stored until the brief is saved.
+
+Aset Raket (owner tool) collects every racket from all promo projects (`GET /api/admin/ws/promo`), with search, per-feed copy and counts of rackets without link. It is also a **library of high-resolution racket photos** (`ws_racket_assets`, one original per racket name, private bucket path `rackets/`): **Ambil gambar** (`POST /api/admin/ws/raket-image`, `src/lib/workspace/raket-image.ts`) reads the racket's product link (Shopify `.json` when available, otherwise og:image / JSON-LD / page images), picks the image with the largest shorter side (ties keep the page's order, so the main product photo wins), downloads the original and stores it. **Gambar lain** takes the next candidate when the biggest is the wrong angle; **Unduh** gives the original. Background removal and rimlight are done by hand for now.
 
 ## Scripts
 
@@ -79,4 +82,4 @@ Portfolio identity: bg `#0C0C0C`, surfaces `#141414` / `#1A1A1A`, line `#2A2A2A`
 
 ## Open items
 
-Image pipeline for Aset Raket (cutout, rimlight, library, ZIP export), invoices, months/packs views, UI to delete a client or switch Danta mode, hardening of old admin APIs (e.g. unauthenticated `/api/categories` POST), disabling Supabase sign-ups, rotating the DB password and secret key.
+Image pipeline for Aset Raket (cutout, rimlight, library, ZIP export; unique-name library across feeds), invoices, months/packs views, UI to delete a client or switch Danta mode, hardening of old admin APIs (e.g. unauthenticated `/api/categories` POST), disabling Supabase sign-ups, rotating the DB password and secret key.

@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { nameKey } from './raket-image';
 import type {
-  Role, FeedDetail, FeedSummary, FeedFile, FeedComment, FeedLink, Slide, BriefRevision,
+  Role, FeedDetail, FeedSummary, FeedFile, FeedComment, FeedLink, FeedItem, Slide, BriefRevision,
 } from './types';
 
 interface FeedRow {
@@ -100,14 +101,15 @@ export async function getFeedDetail(
       id: row.id, number: row.number, title: 'Sedang disiapkan', status: row.status,
       post_date: null, caption: null, created_by: row.created_by, updated_at: row.updated_at,
       version: 0, cover_file_id: null, draft_hidden: true,
-      slides: [], files: [], links: [], revision: null, comments: [], revisions_used: 0,
+      slides: [], items: [], files: [], links: [], revision: null, comments: [], revisions_used: 0,
     };
   }
 
-  const [{ data: revision }, { data: slides }, { data: files }, { data: comments }, { data: links }] = await Promise.all([
-    client.from('ws_brief_revisions').select('id, title, slides, note, status, created_at')
+  const [{ data: revision }, { data: slides }, { data: items }, { data: files }, { data: comments }, { data: links }] = await Promise.all([
+    client.from('ws_brief_revisions').select('id, title, slides, items, note, status, created_at')
       .eq('feed_id', row.id).eq('status', 'pending').maybeSingle().then(r => ({ data: r.data as BriefRevision | null })),
     client.from('ws_slides').select('position, headline, body').eq('feed_id', row.id).order('position'),
+    client.from('ws_feed_items').select('id, name, price_original, price_promo, image_url').eq('feed_id', row.id).order('position'),
     client.from('ws_files').select(FILE_COLS).eq('feed_id', row.id).order('created_at'),
     client.from('ws_comments').select('id, role, kind, visibility, body, version, created_at')
       .eq('feed_id', row.id).order('created_at'),
@@ -121,11 +123,27 @@ export async function getFeedDetail(
   const cover = visible.files.find(f => f.kind === 'design' && f.version === sent && f.slide === 1)
     ?? visible.files.find(f => f.kind === 'design' && f.version === sent);
 
+  // The team sees which rackets already have their original photo in the library (matched by racket name).
+  const assetByKey = new Map<string, { id: string; width: number | null; height: number | null }>();
+  if (role !== 'client' && (items ?? []).length) {
+    const keys = Array.from(new Set((items as FeedItem[]).map(i => nameKey(i.name))));
+    const { data: assets } = await client.from('ws_racket_assets').select('id, name_key, width, height').in('name_key', keys);
+    for (const a of assets ?? []) assetByKey.set(a.name_key, { id: a.id, width: a.width, height: a.height });
+  }
+
   return {
     id: row.id, number: row.number, title: row.title, status: row.status,
     post_date: row.post_date, caption: row.caption, created_by: row.created_by,
     updated_at: row.updated_at, version: sent, cover_file_id: cover?.id ?? null,
     slides: (slides ?? []) as Slide[],
+    items: ((items ?? []) as FeedItem[]).map(i => ({
+      id: role === 'client' ? undefined : i.id,
+      name: i.name,
+      price_original: i.price_original === null ? null : Number(i.price_original),
+      price_promo: i.price_promo === null ? null : Number(i.price_promo),
+      image_url: i.image_url,
+      asset: assetByKey.get(nameKey(i.name)) ?? null,
+    })),
     files: visible.files,
     // Where the finished files can be copied from: the client only sees it once the design is approved.
     links: ((links ?? []) as FeedLink[]).filter(

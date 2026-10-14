@@ -34,8 +34,8 @@ interface Session {
   exp: number;   // unix seconds
 }
 
-/** Danta, or the designer standing in for Danta in a project that has none. */
-export const isLead = (s: Pick<Session, 'role' | 'lead'>) => s.role === 'gozi' || (s.role === 'designer' && !!s.lead);
+// The designer (owner) holds everything Danta can do, in every project; `lead` on the cookie is no longer needed.
+export const isLead = (s: Pick<Session, 'role' | 'lead'>) => s.role === 'gozi' || s.role === 'designer';
 
 /** Does this session count as the given role? (a lead designer also counts as Danta) */
 export const hasRole = (s: Pick<Session, 'role' | 'lead'>, role: Role) => s.role === role || (role === 'gozi' && isLead(s));

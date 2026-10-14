@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { briefChanged, db, fail, isLead, markSeen, requireSession, touch } from '@/lib/workspace/server';
 import { getFeedDetail } from '@/lib/workspace/feeds';
 import { MAX_SLIDES } from '@/lib/workspace/types';
+import { cleanItems } from '@/lib/workspace/promo';
 
 type Ctx = { params: { slug: string; number: string } };
 
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   return NextResponse.json(detail);
 }
 
-// Edit brief: title, caption, post date, slides (max 3).
+// Edit brief: title, caption, post date, slides and the racket list.
 // Danta may always edit. The client may edit a feed they created while it is still in "brief".
 export async function PATCH(req: NextRequest, { params }: Ctx) {
   const session = requireSession(req, params.slug);
@@ -47,8 +48,24 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
   if (typeof body.caption === 'string') patch.caption = body.caption;
   if (isLead(session) && 'post_date' in body) patch.post_date = body.post_date || null;
 
+  // Validate the racket list before anything is written.
+  let items: ReturnType<typeof cleanItems> | null = null;
+  if (Array.isArray(body.items)) {
+    items = cleanItems(body.items);
+    if ('error' in items) return fail(items.error);
+  }
+
   const { error } = await client.from('ws_feeds').update(patch).eq('id', feed.id);
   if (error) return fail(error.message, 500);
+
+  if (items && 'items' in items) {
+    await client.from('ws_feed_items').delete().eq('feed_id', feed.id);
+    if (items.items.length) {
+      const { error: itemErr } = await client.from('ws_feed_items')
+        .insert(items.items.map((it, i) => ({ feed_id: feed.id, position: i + 1, ...it })));
+      if (itemErr) return fail(itemErr.message, 500);
+    }
+  }
 
   if (Array.isArray(body.slides)) {
     const slides = body.slides.slice(0, MAX_SLIDES);

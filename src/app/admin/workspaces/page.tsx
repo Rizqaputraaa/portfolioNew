@@ -21,6 +21,7 @@ interface ProjectCard {
   avatar_url: string | null;
   danta_enabled: boolean;
   client_enabled: boolean;
+  promo_enabled: boolean;
   counts: Record<string, number>;
   done: number;
 }

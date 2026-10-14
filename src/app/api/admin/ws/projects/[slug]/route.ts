@@ -41,6 +41,7 @@ export async function PATCH(req: NextRequest, { params }: { params: { slug: stri
     patch.target_feeds = feeds;
   }
 
+  if ('promo' in body) patch.promo_enabled = body.promo === true;
   if ('packNumber' in body) patch.pack_number = Math.max(1, Math.floor(Number(body.packNumber)) || 1);
   if ('monthLabel' in body) patch.month_label = String(body.monthLabel ?? '').trim().slice(0, 40) || null;
 

@@ -25,6 +25,17 @@ export interface Slide {
   body: string;
 }
 
+/** One racket in a feed's promo list. Prices are full rupiah; every field except the name is optional. */
+export interface FeedItem {
+  id?: string; // row id, only for the team (the library actions need it)
+  name: string;
+  price_original: number | null;
+  price_promo: number | null;
+  image_url: string | null;
+  // The library photo for this racket (team only). Same racket name = same photo, in every feed and project.
+  asset?: { id: string; width: number | null; height: number | null } | null;
+}
+
 export interface FeedFile {
   id: string;
   kind: 'brief' | 'design';
@@ -61,6 +72,7 @@ export interface BriefRevision {
   id: string;
   title: string;
   slides: Slide[];
+  items?: FeedItem[] | null; // null = the client did not touch the racket list
   note: string | null;
   status: 'pending' | 'applied' | 'dismissed';
   created_at: string;
@@ -83,6 +95,7 @@ export interface FeedSummary {
 export interface FeedDetail extends FeedSummary {
   caption: string | null;
   slides: Slide[];
+  items: FeedItem[];
   files: FeedFile[];
   links: FeedLink[];
   revision: BriefRevision | null; // client's pending brief revision
@@ -97,6 +110,7 @@ export interface ProjectInfo {
   month_label: string | null;
   target_feeds: number;
   client_enabled: boolean;
+  promo_enabled?: boolean; // briefs use a racket list ("Daftar promo") instead of brief files
 }
 
 // No limit in the UI. This is only a technical safety cap so a bad request cannot create thousands of rows.
