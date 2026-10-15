@@ -41,7 +41,7 @@ export async function POST(req: NextRequest, ctx: Ctx) {
     return fail(kind === 'result' ? 'Link hasil ditambahkan oleh designer atau Danta' : 'Link referensi ditambahkan oleh Danta atau client', 403);
   }
   const isDraft = r.feed.status === 'brief' && r.feed.created_by === 'gozi';
-  if (kind === 'reference' && role === 'client' && (r.feed.status === 'posted' || isDraft)) {
+  if (kind === 'reference' && role === 'client' && !isLead(r.session) && (r.feed.status === 'posted' || isDraft)) {
     return fail('Feed ini belum bisa menerima link dari client', 403);
   }
   if (kind === 'result' && ['brief', 'brief_review'].includes(r.feed.status)) {
@@ -97,7 +97,7 @@ export async function DELETE(req: NextRequest, ctx: Ctx) {
   const role = r.session.role as Role;
   if (!canManage(link.kind as Kind, role, isLead(r.session))) return fail('Tidak punya akses menghapus link ini', 403);
   // Danta can remove any reference link; the client only their own.
-  if (link.kind === 'reference' && role === 'client' && link.added_by !== 'client') {
+  if (link.kind === 'reference' && role === 'client' && !isLead(r.session) && link.added_by !== 'client') {
     return fail('Tidak punya akses menghapus link ini', 403);
   }
 

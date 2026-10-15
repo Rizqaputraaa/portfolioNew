@@ -12,7 +12,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   const client = db();
   if (!client) return fail('Server belum siap', 500);
 
-  const detail = await getFeedDetail(client, session.pid, Number(params.number), session.role);
+  const detail = await getFeedDetail(client, session.pid, Number(params.number), session.role, session.role === 'client' && !!session.lead);
   if (!detail) return fail('Feed tidak ditemukan', 404);
   if (!detail.draft_hidden) await markSeen(client, detail.id, session.role);
   return NextResponse.json(detail);
@@ -34,7 +34,7 @@ export async function PATCH(req: NextRequest, { params }: Ctx) {
 
   // The client edits directly only a brief they started themselves. Changes to Danta's brief go
   // through /revisions so Danta can see exactly what changed before applying it.
-  const clientCanEdit = feed.created_by === 'client' && feed.status === 'brief';
+  const clientCanEdit = (feed.created_by === 'client' && feed.status === 'brief') || isLead(session);
   if (session.role === 'client' && !clientCanEdit) {
     return fail('Kirim perubahan sebagai revisi ke Danta', 403);
   }

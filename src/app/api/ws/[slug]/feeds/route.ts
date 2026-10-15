@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db, fail, isLead, requireSession, touch } from '@/lib/workspace/server';
+import { createSessionCookie, db, fail, isLead, requireSession, setSessionCookie, touch } from '@/lib/workspace/server';
 import { listFeeds } from '@/lib/workspace/feeds';
 import { MAX_SLIDES } from '@/lib/workspace/types';
 
@@ -11,11 +11,21 @@ export async function GET(req: NextRequest, { params }: { params: { slug: string
   if (!client) return fail('Server belum siap', 500);
 
   const { data: project } = await client
-    .from('ws_projects').select('slug, name, month_label, target_feeds, client_enabled, promo_enabled').eq('id', session.pid).maybeSingle();
+    .from('ws_projects').select('slug, name, month_label, target_feeds, client_enabled, promo_enabled, danta_enabled').eq('id', session.pid).maybeSingle();
   if (!project) return fail('Workspace tidak ditemukan', 404);
 
-  const feeds = await listFeeds(client, session.pid, session.role);
-  return NextResponse.json({ project, me: { role: session.role, name: session.name, lead: isLead(session) }, feeds });
+  // Without Danta, the client's brief is as editable as the designer's. Sessions made before that rule existed
+  // pick it up here, so nobody has to log in again.
+  const clientLead = session.role === 'client' && project.danta_enabled === false;
+  const effective = clientLead ? { ...session, lead: true } : session;
+  const feeds = await listFeeds(client, session.pid, session.role, clientLead);
+  const { danta_enabled: _danta, ...info } = project;
+  void _danta;
+  const res = NextResponse.json({ project: info, me: { role: session.role, name: session.name, lead: isLead(effective) }, feeds });
+  if (clientLead && !session.lead) {
+    setSessionCookie(res, params.slug, createSessionCookie({ pid: session.pid, slug: params.slug, role: session.role, name: session.name, lead: true }));
+  }
+  return res;
 }
 
 // New feed brief — Danta writes briefs; the client may also submit one (raw brief from their side).

@@ -24,7 +24,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     .from('ws_feeds').select('number, project_id').eq('id', file.feed_id).maybeSingle();
   if (!feed || feed.project_id !== session.pid) return fail('File tidak ditemukan', 404);
 
-  const detail = await getFeedDetail(client, session.pid, feed.number, session.role);
+  const detail = await getFeedDetail(client, session.pid, feed.number, session.role, session.role === 'client' && !!session.lead);
   if (!detail?.files.some(f => f.id === file.id)) return fail('Tidak punya akses ke file ini', 403);
 
   const { data: blob, error } = await client.storage.from(BUCKET).download(file.path);

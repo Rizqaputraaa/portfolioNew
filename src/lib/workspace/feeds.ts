@@ -46,7 +46,7 @@ function filterForRole(role: Role, status: FeedRow['status'], files: FeedFile[],
   };
 }
 
-export async function listFeeds(client: SupabaseClient, projectId: string, role: Role): Promise<FeedSummary[]> {
+export async function listFeeds(client: SupabaseClient, projectId: string, role: Role, clientLead = false): Promise<FeedSummary[]> {
   const { data: feeds } = await client
     .from('ws_feeds').select('*').eq('project_id', projectId).order('number');
   const rows = (feeds ?? []) as FeedRow[];
@@ -62,7 +62,7 @@ export async function listFeeds(client: SupabaseClient, projectId: string, role:
   const seenAt = new Map((reads ?? []).map(x => [x.feed_id as string, x.seen_at as string]));
 
   return rows.map(r => {
-    const hidden = role === 'client' && r.status === 'brief' && r.created_by === 'gozi';
+    const hidden = role === 'client' && !clientLead && r.status === 'brief' && r.created_by === 'gozi';
     const feedFiles = ((files ?? []) as (FeedFile & { feed_id: string })[]).filter(f => f.feed_id === r.id);
     const sent = lastSentVersion(
       ((comments ?? []) as (FeedComment & { feed_id: string })[]).filter(c => c.feed_id === r.id),
@@ -88,7 +88,7 @@ export async function listFeeds(client: SupabaseClient, projectId: string, role:
 }
 
 export async function getFeedDetail(
-  client: SupabaseClient, projectId: string, number: number, role: Role,
+  client: SupabaseClient, projectId: string, number: number, role: Role, clientLead = false,
 ): Promise<FeedDetail | null> {
   const { data: feed } = await client
     .from('ws_feeds').select('*').eq('project_id', projectId).eq('number', number).maybeSingle();
@@ -96,7 +96,7 @@ export async function getFeedDetail(
   const row = feed as FeedRow;
 
   // The client never sees what Danta is still drafting.
-  if (role === 'client' && row.status === 'brief' && row.created_by === 'gozi') {
+  if (role === 'client' && !clientLead && row.status === 'brief' && row.created_by === 'gozi') {
     return {
       id: row.id, number: row.number, title: 'Sedang disiapkan', status: row.status,
       post_date: null, caption: null, created_by: row.created_by, updated_at: row.updated_at,

@@ -18,7 +18,7 @@ export async function POST(req: NextRequest, { params }: { params: { slug: strin
     params.slug,
     createSessionCookie({
       pid: result.project.id, slug: params.slug, role, name: result.member.name,
-      lead: role === 'designer' && result.project.danta_enabled === false,
+      lead: role === 'client' && result.project.danta_enabled === false,
     }),
   );
   return res;

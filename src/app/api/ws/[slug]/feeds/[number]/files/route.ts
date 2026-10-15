@@ -37,7 +37,7 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (kind === 'design' && !['design', 'revision'].includes(feed.status)) {
     return fail('Desain hanya bisa diunggah saat status Desain atau Revisi', 409);
   }
-  if (kind === 'brief' && role === 'client' && (feed.status === 'posted' || (feed.status === 'brief' && feed.created_by === 'gozi'))) {
+  if (kind === 'brief' && role === 'client' && !isLead(session) && (feed.status === 'posted' || (feed.status === 'brief' && feed.created_by === 'gozi'))) {
     return fail('Feed ini belum bisa menerima file dari client', 403);
   }
 

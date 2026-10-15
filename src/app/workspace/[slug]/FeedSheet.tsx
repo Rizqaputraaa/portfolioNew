@@ -57,9 +57,9 @@ const rowsToItems = (rows: ItemRow[]) => rows.filter(isFilled).map(r => ({
   image_url: r.image.trim() || null,
 }));
 
-export default function FeedSheet({ slug, number, role, clientEnabled, promoEnabled, onClose, onChanged, onSeen }: Props) {
-  // The designer holds everything Danta can do, in every project.
-  const isDanta = role === 'gozi' || role === 'designer';
+export default function FeedSheet({ slug, number, role, lead, clientEnabled, promoEnabled, onClose, onChanged, onSeen }: Props) {
+  // The designer holds everything Danta can do, in every project. Without Danta, so does the client.
+  const isDanta = role === 'gozi' || role === 'designer' || (role === 'client' && !!lead);
   const [detail, setDetail] = useState<FeedDetail | null>(null);
   const [title, setTitle] = useState('');
   const [slides, setSlides] = useState<Slide[]>([]);
@@ -102,10 +102,10 @@ export default function FeedSheet({ slug, number, role, clientEnabled, promoEnab
       const d = await api<FeedDetail>(slug, `/feeds/${number}`);
       setDetail(d);
       if (!keepDraft) {
-        const src = role === 'client' && d.revision ? d.revision : d;
+        const src = role === 'client' && !lead && d.revision ? d.revision : d;
         setTitle(src.title);
         setSlides(src.slides.length ? src.slides : [emptySlide(1)]);
-        setItemRows(toRows(role === 'client' && d.revision?.items ? d.revision.items : d.items));
+        setItemRows(toRows(role === 'client' && !lead && d.revision?.items ? d.revision.items : d.items));
         setListNote('');
         setDirty(false);
       }
@@ -114,7 +114,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, promoEnab
       setError((e as Error).message);
       return undefined;
     }
-  }, [slug, number, role]);
+  }, [slug, number, role, lead]);
 
   useEffect(() => { load().then(() => onSeen?.()); }, [load]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -182,14 +182,14 @@ export default function FeedSheet({ slug, number, role, clientEnabled, promoEnab
   const canUploadBrief = isDanta || (role === 'client' && status !== 'posted');
   const open = detail.version + 1; // version being worked on
   // In review the client proposes changes; Danta decides what lands in the brief.
-  const clientRevising = role === 'client' && status === 'brief_review';
+  const clientRevising = role === 'client' && !isDanta && status === 'brief_review';
   // Danta's "Minta revisi" notes (newest first): what the designer has to fix.
   const revisionNotes = detail.comments.filter(c => c.kind === 'revision').reverse();
   const uploadingDesign = pending.some(p => p.kind === 'design');
   const referenceLinks = detail.links.filter(l => l.kind !== 'result');
   const resultLinks = detail.links.filter(l => l.kind === 'result');
   // The designer and Danta add result links, but only once the brief has gone to the designer.
-  const canAddResult = (role === 'designer' || isDanta) && status !== 'brief' && status !== 'brief_review';
+  const canAddResult = (role === 'designer' || (isDanta && role !== 'client')) && status !== 'brief' && status !== 'brief_review';
   const feedName = detail.title && !/^Feed \d+$/.test(detail.title) ? `Feed ${number} (${detail.title})` : `Feed ${number}`;
   const resultMessage =
     `Halo kak, hasil ${feedName} sudah selesai.\n` +
@@ -750,7 +750,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, promoEnab
 
           {/* ── Workflow actions ───────────────────────────────────── */}
           <div className={`${styles.actions} ${styles.actionBar}`}>
-            {isDanta && status === 'brief' && (clientEnabled ? (
+            {isDanta && status === 'brief' && (clientEnabled && role !== 'client' ? (
               <>
                 <button className={styles.btn} disabled={!!busy || dirty}
                   onClick={async () => { await doAction('send_brief_to_client'); setShareOpen(true); }}>
@@ -773,12 +773,14 @@ export default function FeedSheet({ slug, number, role, clientEnabled, promoEnab
                   onClick={() => doAction('send_to_designer')}>
                   {role === 'designer' ? 'Mulai desain' : 'Kirim ke designer'}
                 </button>
-                <button className={`${styles.btn} ${styles.btnTint}`} onClick={() => setShareOpen(o => !o)}>
-                  Bagikan link
-                </button>
+                {role !== 'client' && (
+                  <button className={`${styles.btn} ${styles.btnTint}`} onClick={() => setShareOpen(o => !o)}>
+                    Bagikan link
+                  </button>
+                )}
               </>
             )}
-            {role === 'client' && status === 'brief_review' && (
+            {role === 'client' && !isDanta && status === 'brief_review' && (
               <button className={`${styles.btn} ${styles.btnGreen}`} disabled={!!busy || dirty || !!detail.revision || !!detail.brief_confirmed}
                 title={detail.revision ? 'Revisimu masih menunggu Danta'
                   : detail.brief_confirmed ? 'Sudah dikonfirmasi. Aktif lagi kalau ada perubahan baru.' : ''}
@@ -806,7 +808,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, promoEnab
                 </button>
               </>
             )}
-            {isDanta && (status === 'approved' || status === 'posted') && (
+            {isDanta && role !== 'client' && (status === 'approved' || status === 'posted') && (
               <button className={styles.btn} disabled={!!busy || resultLinks.length === 0}
                 title={resultLinks.length === 0 ? 'Tambahkan link hasil (Google Drive) dulu' : ''}
                 onClick={() => setResultShareOpen(true)}>
@@ -826,7 +828,7 @@ export default function FeedSheet({ slug, number, role, clientEnabled, promoEnab
             )}
           </div>
 
-          {role === 'client' && status === 'brief_review' && (
+          {role === 'client' && !isDanta && status === 'brief_review' && (
             <div className={styles.hint}>
               Danta sudah menyiapkan brief ini. Cek di bawah, ubah langsung kalau ada yang kurang, atau tambah file
               dan link. Kalau sudah pas, tekan <b>Brief sudah sesuai</b>.
