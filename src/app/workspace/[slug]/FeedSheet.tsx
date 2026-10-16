@@ -65,6 +65,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
   const [slides, setSlides] = useState<Slide[]>([]);
   const [itemRows, setItemRows] = useState<ItemRow[]>([newItemRow()]);
   const [readingList, setReadingList] = useState(false);
+  const [racketZoom, setRacketZoom] = useState<{ id: string; name: string; size: string } | null>(null);
   const [fetching, setFetching] = useState<{ done: number; total: number } | null>(null);
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
   const [ranks, setRanks] = useState<Record<string, number>>({});
@@ -446,8 +447,11 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                     <div className={styles.promoHead}>
                       <span className={styles.promoNum}>{i + 1}</span>
                       {a && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img className={styles.promoThumb} src={assetHref} alt="" loading="lazy" />
+                        <button className={styles.promoThumbBtn} aria-label={`Perbesar gambar ${r.name}`}
+                          onClick={() => setRacketZoom({ id: a.id, name: r.name, size: `${a.width}×${a.height}` })}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img className={styles.promoThumb} src={assetHref} alt="" loading="lazy" />
+                        </button>
                       )}
                       <span className={styles.promoReadName}>{r.name}</span>
                     </div>
@@ -506,8 +510,11 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                     <div className={styles.promoAsset}>
                       {r.asset ? (
                         <>
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img className={styles.promoThumb} src={`/api/ws/${slug}/rackets/${r.asset.id}`} alt="" loading="lazy" />
+                          <button className={styles.promoThumbBtn} aria-label={`Perbesar gambar ${r.name}`}
+                            onClick={() => setRacketZoom({ id: r.asset!.id, name: r.name, size: `${r.asset!.width}×${r.asset!.height}` })}>
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img className={styles.promoThumb} src={`/api/ws/${slug}/rackets/${r.asset.id}`} alt="" loading="lazy" />
+                          </button>
                           <span className={`${styles.muted} ${styles.small}`}>
                             {r.asset.width}×{r.asset.height}
                             {Math.min(r.asset.width ?? 0, r.asset.height ?? 0) < 1000 ? ' · kecil' : ''}
@@ -995,6 +1002,20 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
           url={resultLinks[0]?.url ?? ''}
           onClose={() => setResultShareOpen(false)}
         />
+      )}
+
+      {racketZoom && (
+        <div className={styles.lightbox} onClick={() => setRacketZoom(null)} role="dialog" aria-label={`Gambar ${racketZoom.name}`}>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={`/api/ws/${slug}/rackets/${racketZoom.id}`} alt={racketZoom.name} onClick={e => e.stopPropagation()}
+            style={{ background: '#fff' }} />
+          <div className={styles.lightboxBar} onClick={e => e.stopPropagation()}>
+            <span className={`${styles.small} ${styles.muted}`}>{racketZoom.name} · {racketZoom.size}</span>
+            <a className={`${styles.btn} ${styles.btnSm}`} style={{ display: 'inline-flex', alignItems: 'center' }}
+              href={`/api/ws/${slug}/rackets/${racketZoom.id}?download=1`}>Unduh asli</a>
+            <button className={`${styles.btn} ${styles.btnGhost} ${styles.btnSm}`} onClick={() => setRacketZoom(null)}>Tutup</button>
+          </div>
+        </div>
       )}
 
       {zoom && (

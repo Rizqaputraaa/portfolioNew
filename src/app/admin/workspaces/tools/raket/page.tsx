@@ -43,6 +43,7 @@ export default function RaketTool() {
   const [copied, setCopied] = useState('');
   const [busy, setBusy] = useState<Record<string, boolean>>({});
   const [errs, setErrs] = useState<Record<string, string>>({});
+  const [zoom, setZoom] = useState<{ name: string; url: string; download: string | null; size: string } | null>(null);
   const [editing, setEditing] = useState('');
   const [draft, setDraft] = useState('');
   const [ranks, setRanks] = useState<Record<string, number>>({});
@@ -121,6 +122,13 @@ export default function RaketTool() {
     await call(`/api/admin/ws/raket-image?id=${it.asset.id}`, { method: 'DELETE' });
     load();
   };
+
+  useEffect(() => {
+    if (!zoom) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setZoom(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [zoom]);
 
   const q = query.trim().toLowerCase();
   const shown = useMemo(() => (projects ?? [])
@@ -215,10 +223,13 @@ export default function RaketTool() {
                         <div key={it.id} className={styles.assetRow}>
                           <span className={styles.rackNum}>{i + 1}</span>
                           <div className={styles.assetThumb}>
-                            {a?.url
-                              // eslint-disable-next-line @next/next/no-img-element
-                              ? <img src={a.url} alt={it.name} loading="lazy" />
-                              : busy[it.id] ? <span className={styles.spinner} aria-label="Mengambil gambar" /> : <span aria-hidden>–</span>}
+                            {a?.url ? (
+                              <button className={styles.assetThumbBtn} aria-label={`Perbesar gambar ${it.name}`}
+                                onClick={() => setZoom({ name: it.name, url: a.url as string, download: a.download_url, size: `${a.width}×${a.height}${a.size_bytes ? ` · ${fmtMb(a.size_bytes)}` : ''}` })}>
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img src={a.url} alt={it.name} loading="lazy" />
+                              </button>
+                            ) : busy[it.id] ? <span className={styles.spinner} aria-label="Mengambil gambar" /> : <span aria-hidden>–</span>}
                           </div>
                           <div className={styles.assetMain}>
                             <span className={styles.rackName}>{it.name}</span>
@@ -274,6 +285,20 @@ export default function RaketTool() {
             </div>
           ))}
         </>
+      )}
+
+      {zoom && (
+        <div className={styles.zoomScrim} onClick={() => setZoom(null)}>
+          <div className={styles.zoomBox} role="dialog" aria-label={`Gambar ${zoom.name}`} onClick={e => e.stopPropagation()}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img className={styles.zoomImg} src={zoom.url} alt={zoom.name} />
+            <div className={styles.zoomBar}>
+              <span className={styles.zoomName}>{zoom.name}<span className={styles.help}> · {zoom.size}</span></span>
+              {zoom.download && <a className={styles.btn} style={{ display: 'inline-flex', alignItems: 'center', height: 38 }} href={zoom.download}>Unduh asli</a>}
+              <button className={`${styles.btn} ${styles.btnGhost}`} style={{ height: 38 }} onClick={() => setZoom(null)}>Tutup</button>
+            </div>
+          </div>
+        </div>
       )}
     </>
   );
