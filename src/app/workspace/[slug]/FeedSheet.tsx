@@ -65,6 +65,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
   const [slides, setSlides] = useState<Slide[]>([]);
   const [itemRows, setItemRows] = useState<ItemRow[]>([newItemRow()]);
   const [readingList, setReadingList] = useState(false);
+  const [listOpen, setListOpen] = useState(true);
   const [racketZoom, setRacketZoom] = useState<{ id: string; name: string; size: string } | null>(null);
   const [fetching, setFetching] = useState<{ done: number; total: number } | null>(null);
   const [rowBusy, setRowBusy] = useState<Record<string, boolean>>({});
@@ -118,6 +119,17 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
   }, [slug, number, role, lead]);
 
   useEffect(() => { load().then(() => onSeen?.()); }, [load]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // The racket list can be long: keep it folded if it was folded last time.
+  useEffect(() => {
+    try { if (localStorage.getItem('ws-racket-list') === 'closed') setListOpen(false); } catch { /* no storage: stay open */ }
+  }, []);
+  const toggleList = () => {
+    setListOpen(o => {
+      try { localStorage.setItem('ws-racket-list', o ? 'closed' : 'open'); } catch { /* ignore */ }
+      return !o;
+    });
+  };
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && requestClose();
@@ -338,6 +350,11 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
     if (saved && showPromo && !clientRevising) void autoFetch(prev);
   };
 
+  const deleteDesign = (f: FeedFile) => {
+    if (!window.confirm(`Hapus desain slide ${f.slide} (versi ${f.version})? File-nya hilang permanen.`)) return;
+    return run('delfile', () => api(slug, `/files/${f.id}`, { method: 'DELETE' }));
+  };
+
   const resolveRevision = (action: 'apply' | 'dismiss') =>
     run('revision', () => api(slug, `/feeds/${number}/revisions`, { method: 'PATCH', json: { action } }));
 
@@ -405,11 +422,18 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
         {showPromo && (
           <div className={styles.group}>
             <div className={styles.slideHead}>
-              <span className={styles.slideNum}>Daftar Raket</span>
+              <button type="button" className={styles.listToggle} aria-expanded={listOpen} onClick={toggleList}>
+                <svg className={`${styles.chev} ${listOpen ? styles.chevOpen : ''}`} width="14" height="14" viewBox="0 0 24 24"
+                  fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+                <span className={styles.slideNum}>Daftar Raket</span>
+              </button>
               <span className={`${styles.muted} ${styles.small}`}>
                 {fetching ? `Mengambil gambar ${fetching.done}/${fetching.total}…` : `${filledRows.length} raket`}
               </span>
             </div>
+            {listOpen && (<>
             {!canEditBrief && filledRows.length > 0 && (
               <button className={`${styles.btn} ${styles.btnTint} ${styles.btnSm}`} style={{ alignSelf: 'flex-start' }}
                 onClick={() => copyLink('list-all', filledRows.map((r, i) => {
@@ -524,6 +548,9 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                             {rowBusy[r.itemId] ? 'Mengambil…' : 'Gambar lain'}
                           </button>
                           <button className={styles.linkBtn} onClick={() => dropAsset(r)}>Hapus</button>
+                          {r.image.trim() && (
+                            <a className={styles.fileLink} href={r.image.trim()} target="_blank" rel="noopener noreferrer">Buka website ↗</a>
+                          )}
                         </>
                       ) : (
                         <>
@@ -531,6 +558,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                           <button className={styles.linkBtn} disabled={rowBusy[r.itemId]} onClick={() => racketAction(r, 'get')}>
                             {rowBusy[r.itemId] ? 'Mengambil…' : 'Ambil gambar'}
                           </button>
+                          <a className={styles.fileLink} href={r.image.trim()} target="_blank" rel="noopener noreferrer">Buka website ↗</a>
                         </>
                       )}
                     </div>
@@ -549,6 +577,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                 {itemProblem.name.trim() ? `${itemProblem.name.trim()}: harga tidak valid` : 'Ada baris yang namanya belum diisi'}
               </span>
             )}
+            </>)}
           </div>
         )}
 
@@ -902,7 +931,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                 <VersionBlock
                   slug={slug} title={`Versi ${open} · sedang dikerjakan`} slideCount={slideCount}
                   files={designFiles.filter(f => f.version === open)}
-                  canUpload onZoom={setZoom}
+                  canUpload onZoom={setZoom} onDelete={deleteDesign}
                   pending={pending.filter(p => p.kind === 'design')}
                   onPick={s => { uploadSlide.current = s; designInput.current?.click(); }}
                 />
@@ -914,6 +943,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                   files={designFiles.filter(f => f.version === v)}
                   canDownload={status === 'approved' || status === 'posted' || isTeam}
                   onZoom={setZoom}
+                  onDelete={isDanta && status !== 'approved' && status !== 'posted' ? deleteDesign : undefined}
                 />
               ))}
 
@@ -1116,11 +1146,11 @@ function FileRow({ slug, file }: { slug: string; file: FeedFile }) {
 }
 
 function VersionBlock({
-  slug, title, slideCount, files, canUpload, canDownload, busy, onPick, onZoom, pending,
+  slug, title, slideCount, files, canUpload, canDownload, busy, onPick, onZoom, onDelete, pending,
 }: {
   slug: string; title: string; slideCount: number; files: FeedFile[];
   canUpload?: boolean; canDownload?: boolean; busy?: boolean;
-  onPick?: (slide: number) => void; onZoom?: (file: FeedFile) => void;
+  onPick?: (slide: number) => void; onZoom?: (file: FeedFile) => void; onDelete?: (file: FeedFile) => void;
   pending?: PendingUpload[];
 }) {
   return (
@@ -1156,6 +1186,11 @@ function VersionBlock({
                 <span className={styles.thumbTag}>Slide {slide}</span>
                 {onZoom && isImage(f.mime_type, f.file_name) && (
                   <button className={styles.thumbZoom} onClick={() => onZoom(f)} aria-label={`Perbesar slide ${slide}`} />
+                )}
+                {onDelete && (
+                  <button className={styles.thumbDel} aria-label={`Hapus desain slide ${slide}`} onClick={() => onDelete(f)}>
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
+                  </button>
                 )}
                 {canDownload && <a className={styles.thumbDl} href={fileUrl(slug, f.id, true)}>Unduh asli</a>}
                 {canUpload && (

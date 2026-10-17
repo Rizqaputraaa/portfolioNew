@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { BUCKET, db, fail, requireSession } from '@/lib/workspace/server';
+import { BUCKET, db, fail, isLead, requireSession, touch } from '@/lib/workspace/server';
 import { getFeedDetail } from '@/lib/workspace/feeds';
 
 type Ctx = { params: { slug: string; id: string } };
@@ -33,4 +33,29 @@ export async function GET(req: NextRequest, { params }: Ctx) {
   if (error || !data) return fail(error?.message ?? 'Gagal membuat link', 500);
 
   return NextResponse.redirect(data.signedUrl);
+}
+
+// Removes one design file (a single slide of a version). Designer and Danta only, and not once the feed is approved.
+export async function DELETE(req: NextRequest, { params }: Ctx) {
+  const session = requireSession(req, params.slug);
+  if (!session) return fail('Belum login', 401);
+  if (!isLead(session)) return fail('Tidak punya akses', 403);
+  const client = db();
+  if (!client) return fail('Server belum siap', 500);
+
+  const { data: file } = await client
+    .from('ws_files').select('id, feed_id, kind, path, preview_path').eq('id', params.id).maybeSingle();
+  if (!file) return fail('File tidak ditemukan', 404);
+  if (file.kind !== 'design') return fail('Hanya file desain yang bisa dihapus di sini', 400);
+
+  const { data: feed } = await client
+    .from('ws_feeds').select('id, status, project_id').eq('id', file.feed_id).maybeSingle();
+  if (!feed || feed.project_id !== session.pid) return fail('File tidak ditemukan', 404);
+  if (feed.status === 'approved' || feed.status === 'posted') return fail('Desain yang sudah disetujui tidak bisa dihapus', 409);
+
+  await client.storage.from(BUCKET).remove([file.path, ...(file.preview_path ? [file.preview_path] : [])]);
+  const { error } = await client.from('ws_files').delete().eq('id', file.id);
+  if (error) return fail(error.message, 500);
+  await touch(client, feed.id, session.role, false);
+  return NextResponse.json({ ok: true });
 }
