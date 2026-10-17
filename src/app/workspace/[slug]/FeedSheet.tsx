@@ -1208,7 +1208,7 @@ function VersionBlock({
                 )}
                 {canDownload && <a className={styles.thumbDl} href={fileUrl(slug, f.id, true)}>Unduh asli</a>}
                 {canUpload && (
-                  <button className={styles.thumbDl} style={{ border: 'none', cursor: 'pointer' }}
+                  <button className={`${styles.thumbDl} ${canDownload ? styles.thumbDlLeft : ''}`} style={{ border: 'none', cursor: 'pointer' }}
                     onClick={() => onPick?.(slide)}>Ganti</button>
                 )}
               </div>

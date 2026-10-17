@@ -938,3 +938,5 @@
 .thumbDel:hover { background: var(--red); }
 .thumbDel:active { transform: scale(0.9); }
 @media (prefers-reduced-motion: reduce) { .chev { transition: none; } }
+/* two buttons at the bottom of a design thumbnail: Ganti on the left, Unduh asli on the right */
+.thumbDlLeft { right: auto; left: 8px; }
