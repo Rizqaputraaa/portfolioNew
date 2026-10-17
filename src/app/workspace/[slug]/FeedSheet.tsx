@@ -211,6 +211,8 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
       : `Link hasil:\n${resultLinks.map(l => `${l.label}: ${l.url}`).join('\n')}`) +
     '\nSilakan diunduh ya kak, terima kasih.';
   const working = role === 'designer' && (status === 'design' || status === 'revision');
+  // In review the designer can still fix the version under review: add a removed slide or replace one.
+  const reviewing = role === 'designer' && status === 'review';
   // NEXT_PUBLIC_SITE_URL pins the address used in shared links (e.g. https://rizqaputra.site), whichever
   // address the page was opened from. Without it, links use the address currently in the browser.
   const siteBase = (process.env.NEXT_PUBLIC_SITE_URL || (typeof window === 'undefined' ? '' : window.location.origin)).replace(/\/$/, '');
@@ -836,7 +838,9 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
             )}
             {isDanta && status === 'review' && (
               <>
-                <button className={`${styles.btn} ${styles.btnGreen}`} disabled={!!busy} onClick={() => doAction('approve')}>
+                <button className={`${styles.btn} ${styles.btnGreen}`} disabled={!!busy || !designFiles.some(f => f.version === detail.version)}
+                  title={designFiles.some(f => f.version === detail.version) ? '' : 'Belum ada desain di versi ini'}
+                  onClick={() => doAction('approve')}>
                   Setujui v{detail.version}
                 </button>
                 <button className={`${styles.btn} ${styles.btnDanger}`} disabled={!!busy} onClick={() => setShowRevision(v => !v)}>
@@ -937,7 +941,17 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                 />
               )}
 
-              {versions.filter(v => !(working && v === open)).map(v => (
+              {reviewing && (
+                <VersionBlock
+                  slug={slug} title={`Versi ${detail.version} · sedang direview`} slideCount={slideCount}
+                  files={designFiles.filter(f => f.version === detail.version)}
+                  canUpload canDownload onZoom={setZoom} onDelete={deleteDesign}
+                  pending={pending.filter(p => p.kind === 'design')}
+                  onPick={s => { uploadSlide.current = s; designInput.current?.click(); }}
+                />
+              )}
+
+              {versions.filter(v => !(working && v === open) && !(reviewing && v === detail.version)).map(v => (
                 <VersionBlock
                   key={v} slug={slug} title={`Versi ${v}`} slideCount={slideCount}
                   files={designFiles.filter(f => f.version === v)}
@@ -947,7 +961,7 @@ export default function FeedSheet({ slug, number, role, lead, clientEnabled, pro
                 />
               ))}
 
-              {!working && versions.length === 0 && (
+              {!working && !reviewing && versions.length === 0 && (
                 <div className={styles.empty}>Belum ada desain.</div>
               )}
             </section>

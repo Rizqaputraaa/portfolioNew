@@ -34,8 +34,8 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     .eq('project_id', session.pid).eq('number', Number(params.number)).maybeSingle();
   if (!feed) return fail('Feed tidak ditemukan', 404);
 
-  if (kind === 'design' && !['design', 'revision'].includes(feed.status)) {
-    return fail('Desain hanya bisa diunggah saat status Desain atau Revisi', 409);
+  if (kind === 'design' && !['design', 'revision', 'review'].includes(feed.status)) {
+    return fail('Desain hanya bisa diunggah saat status Desain, Revisi, atau Review', 409);
   }
   if (kind === 'brief' && role === 'client' && !isLead(session) && (feed.status === 'posted' || (feed.status === 'brief' && feed.created_by === 'gozi'))) {
     return fail('Feed ini belum bisa menerima file dari client', 403);
@@ -79,9 +79,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (kind === 'design') {
       const { data: comments } = await client
         .from('ws_comments').select('kind, role, version').eq('feed_id', feed.id);
-      version = lastSentVersion(
-        (comments ?? []) as { kind: 'system'; role: 'system'; version: number | null }[],
-      ) + 1;
+      const sent = lastSentVersion((comments ?? []) as { kind: 'system'; role: 'system'; version: number | null }[]);
+      // While in review the file goes into the version being reviewed (a slide was removed or needs replacing);
+      // otherwise it belongs to the version being worked on.
+      version = feed.status === 'review' ? sent : sent + 1;
 
       // One file per slide per version (replace if re-uploaded).
       const { data: old } = await client

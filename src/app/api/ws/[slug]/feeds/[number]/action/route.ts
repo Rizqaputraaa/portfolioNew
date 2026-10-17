@@ -108,6 +108,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
       role: 'gozi', kind: 'revision', visibility: 'internal', body: note, version: sent,
     };
   } else if (action === 'approve') {
+    const { count: designs } = await client
+      .from('ws_files').select('id', { count: 'exact', head: true })
+      .eq('feed_id', feed.id).eq('kind', 'design').eq('version', sent);
+    if (!designs) return fail('Belum ada desain di versi ini. Upload desain dulu sebelum disetujui.', 409);
     commentRow = {
       role: 'gozi', kind: 'approval', visibility: 'all',
       body: note || `Versi ${sent} disetujui`, version: sent,
